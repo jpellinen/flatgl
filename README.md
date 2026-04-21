@@ -14,31 +14,49 @@ A lightweight 3D WebGL 2.0 renderer built around an Entity-Component-System (ECS
 - **OBJ loader** — parses geometry with positions, normals, and UVs
 - **Responsive** — handles window resize with proper DPI scaling
 
-## Getting Started
+## Usage as a Library
+
+`flatgl` is structured as a library. Build it with:
 
 ```bash
 npm install
-npm run dev
+npm run build
 ```
 
-Then open `index.html` in a browser with WebGL2 support. Click and drag to orbit the camera.
+This produces `dist/index.js` (ESM) and `dist/index.d.ts` (TypeScript declarations). Another project can consume it via a local path reference in its `package.json`:
+
+```json
+"dependencies": {
+  "flatgl": "file:../flatgl"
+}
+```
+
+## Demo
+
+A demo scene is in `examples/demo.ts`. To run it locally:
+
+```bash
+npm run dev:demo
+```
+
+Then open `http://localhost:8080`. Click and drag to orbit the camera. The demo rebuilds automatically when source files change.
 
 ## Scripts
 
 | Command | Description |
 |---|---|
-| `npm run dev` | Build in watch mode (esbuild) |
-| `npm run build` | One-time production build |
+| `npm run build` | Build the library (`dist/index.js` + `dist/index.d.ts`) |
+| `npm run dev` | Build the library in watch mode |
+| `npm run build:demo` | One-time build of the demo (`dist/demo.js`) |
+| `npm run dev:demo` | Build the demo in watch mode and serve on port 8080 |
 | `npm run lint` | Run ESLint on `src/` |
-
-Output is written to `dist/bundle.js` and loaded by `index.html`.
 
 ## Project Structure
 
 ```
 src/
-├── index.ts              # Entry point; initializes ECS and render loop
-├── config.ts             # All tunable constants (shadow, camera, lighting, input)
+├── index.ts              # Library entry point — re-exports the public API
+├── config.ts             # Tunable constants (shadow, camera, lighting, input)
 ├── core/                 # ECS primitives (World, Entity, System)
 ├── components/           # Data components (Mesh, Material, Transform, Camera, Light)
 ├── systems/              # Logic systems (RenderSystem, ShadowSystem, InputSystem)
@@ -47,6 +65,8 @@ src/
 ├── loaders/              # OBJ file parser
 ├── shaders/              # GLSL 3.00 ES shaders
 └── assets/               # .obj model files
+examples/
+└── demo.ts               # Demo scene using the library
 ```
 
 ## Rendering Pipeline
@@ -68,6 +88,6 @@ All constants are in [src/config.ts](src/config.ts). Key settings:
 ## Tech Stack
 
 - **Language:** TypeScript 6 (strict mode, ES2020 target)
-- **Build:** esbuild with custom loaders for `.glsl` and `.obj` files
+- **Build:** tsup (library) + esbuild (demo), with custom loaders for `.glsl` and `.obj` files
 - **Rendering:** WebGL 2.0 — no external graphics libraries
 - **Linting:** ESLint 9 + typescript-eslint + Prettier
