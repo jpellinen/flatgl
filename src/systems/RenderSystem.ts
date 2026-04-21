@@ -52,6 +52,7 @@ export class RenderSystem implements System {
       if (camera && this.aspect !== undefined) {
         material.setMatrix4('u_view', camera.viewMatrix().array);
         material.setMatrix4('u_projection', camera.projectionMatrix(this.aspect).array);
+        material.setVec3('u_cameraPos', camera.position.x, camera.position.y, camera.position.z);
       }
       if (light) {
         material.setVec3('u_lightDir', light.direction.x, light.direction.y, light.direction.z);

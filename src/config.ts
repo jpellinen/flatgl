@@ -1,5 +1,5 @@
 // Shadow
-export const SHADOW_MAP_SIZE = 512;
+export const SHADOW_MAP_SIZE = 1024;
 export const SHADOW_LIGHT_NEAR = 0.1;
 export const SHADOW_LIGHT_FAR = 25;
 export const SHADOW_ORTHO_EXTENT = 6;
@@ -19,6 +19,10 @@ export const CAMERA_FAR = 100;
 // Input
 export const ORBIT_SENSITIVITY = 0.005;
 export const ORBIT_PITCH_CLAMP = 0.01;
+export const ORBIT_ZOOM_SENSITIVITY = 0.001;
+export const ORBIT_ZOOM_MIN = 1.5;
+export const ORBIT_ZOOM_MAX = 20;
+export const AUTO_ROTATE_SPEED = 0.3;
 
 // Geometry
 export const PLANE_HALF_EXTENT = 4;

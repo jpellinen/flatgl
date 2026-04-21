@@ -14,7 +14,4 @@ None outstanding — all items resolved.
 
 ## Next Features
 
-- **Auto-rotate** — gentle idle spin when not dragging; pause on pointerdown
-- **Scroll to zoom** — `wheel` listener in `InputSystem` to adjust orbit radius
-- **Specular highlights** — Blinn-Phong specular term in `scene.frag.glsl` (~4 lines)
-- **Sharper shadows** — bump `SHADOW_MAP_SIZE` to 1024 and add Poisson disk offsets to the PCF loop
+None at the moment

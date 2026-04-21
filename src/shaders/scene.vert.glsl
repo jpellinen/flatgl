@@ -10,6 +10,7 @@ uniform mat4 u_projection;
 uniform mat4 u_lightSpaceMatrix;
 
 out vec3 v_normal;
+out vec3 v_worldPos;
 out vec2 v_uv;
 out vec4 v_shadowCoord;
 
@@ -17,6 +18,7 @@ void main() {
   vec4 worldPos = u_model * vec4(a_position, 1.0);
   gl_Position = u_projection * u_view * worldPos;
   v_normal = mat3(u_model) * a_normal;
+  v_worldPos = worldPos.xyz;
   v_uv = a_uv;
   v_shadowCoord = u_lightSpaceMatrix * worldPos;
 }
