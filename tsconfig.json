@@ -11,5 +11,5 @@
     },
     "ignoreDeprecations": "6.0"
   },
-  "include": ["src/**/*.ts", "*.ts"]
+  "include": ["src/**/*.ts", "examples/**/*.ts", "*.ts"]
 }
