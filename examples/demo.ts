@@ -79,7 +79,7 @@ function createScenePass(
 } {
   const shader = Shader.fromSource(context, sceneVS, sceneFS);
   const modelMaterial = new Material(context, shader);
-  const planeMaterial = new Material(context, Shader.fromSource(context, sceneVS, sceneFS));
+  const planeMaterial = new Material(context, shader);
 
   const stride = 8 * 4;
   const { vertices, indices } = ObjLoader.parse(modelSrc);
@@ -126,14 +126,24 @@ function createScenePass(
     context,
     planeBuf,
     [
-      { loc: planeMaterial.shader.attribLocation('a_position'), size: 3, stride, offset: 0 },
+      {
+        loc: planeMaterial.shader.attribLocation('a_position'),
+        size: 3,
+        stride,
+        offset: 0,
+      },
       {
         loc: planeMaterial.shader.attribLocation('a_normal'),
         size: 3,
         stride,
         offset: 3 * 4,
       },
-      { loc: planeMaterial.shader.attribLocation('a_uv'), size: 2, stride, offset: 6 * 4 },
+      {
+        loc: planeMaterial.shader.attribLocation('a_uv'),
+        size: 2,
+        stride,
+        offset: 6 * 4,
+      },
     ],
     { indices: new Uint16Array([0, 2, 1, 0, 3, 2]) },
   );
@@ -294,6 +304,7 @@ function init(): void {
   }
 
   function cleanup(): void {
+    cancelAnimationFrame(rafHandle);
     window.removeEventListener('resize', resize);
     inputSystem.destroy();
     shadowPass.destroy();
@@ -308,17 +319,23 @@ function init(): void {
   window.addEventListener('resize', resize);
   window.addEventListener('beforeunload', cleanup);
 
+  let rafHandle = 0;
   let lastTime = 0;
   function loop(time: number): void {
-    const dt = (time - lastTime) / 1000;
-    lastTime = time;
-    inputSystem.update(dt);
-    shadowPass.update(dt);
-    pass1.update(dt);
-    pass2.update(dt);
-    requestAnimationFrame(loop);
+    try {
+      const dt = (time - lastTime) / 1000;
+      lastTime = time;
+      inputSystem.update(dt);
+      shadowPass.update(dt);
+      pass1.update(dt);
+      pass2.update(dt);
+    } catch (err) {
+      showError(err as Error);
+      return;
+    }
+    rafHandle = requestAnimationFrame(loop);
   }
-  requestAnimationFrame(loop);
+  rafHandle = requestAnimationFrame(loop);
 }
 
 try {
