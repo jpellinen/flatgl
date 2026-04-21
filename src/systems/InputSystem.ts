@@ -1,8 +1,7 @@
-import { System } from '@/core/System';
-import { Camera } from '@/components/Camera';
 import { Vec3 } from '@/math/Vec3';
-
-import { ORBIT_SENSITIVITY, ORBIT_PITCH_CLAMP } from '@/config';
+import { Camera } from '@/components/Camera';
+import { System } from '@/core/System';
+import { ORBIT_PITCH_CLAMP, ORBIT_SENSITIVITY } from '@/config';
 
 export class InputSystem implements System {
   private dragging = false;

@@ -1,46 +1,45 @@
-import { RenderContext } from '@/renderer/RenderContext';
+import { Mat4 } from '@/math/Mat4';
+import { Vec3 } from '@/math/Vec3';
 import { Buffer } from '@/renderer/Buffer';
-import { Shader } from '@/renderer/Shader';
-import { ObjLoader } from '@/loaders/ObjLoader';
-import cubeObj from './assets/teapot2.obj';
-import sceneVS from './shaders/scene.vert.glsl';
-import sceneFS from './shaders/scene.frag.glsl';
-import shadowVS from './shaders/shadow.vert.glsl';
-import shadowFS from './shaders/shadow.frag.glsl';
-import screenVS from './shaders/screen.vert.glsl';
-import screenFS from './shaders/screen.frag.glsl';
-import { Texture } from '@/renderer/Texture';
 import { Framebuffer } from '@/renderer/Framebuffer';
-import { Mesh } from '@/components/Mesh';
+import { RenderContext } from '@/renderer/RenderContext';
+import { Shader } from '@/renderer/Shader';
+import { Texture } from '@/renderer/Texture';
+import { Camera } from '@/components/Camera';
+import { DirectionalLight } from '@/components/DirectionalLight';
 import { Material } from '@/components/Material';
+import { Mesh } from '@/components/Mesh';
 import { Transform } from '@/components/Transform';
 import { World } from '@/core/World';
+import { InputSystem } from '@/systems/InputSystem';
 import { RenderSystem } from '@/systems/RenderSystem';
 import { ShadowSystem } from '@/systems/ShadowSystem';
-import { InputSystem } from '@/systems/InputSystem';
-import { DirectionalLight } from '@/components/DirectionalLight';
-import { Camera } from '@/components/Camera';
-import { Vec3 } from '@/math/Vec3';
-import { Mat4 } from '@/math/Mat4';
-
+import { ObjLoader } from '@/loaders/ObjLoader';
 import {
-  CHECKER_SIZE,
-  CHECKER_LIGHT,
-  CHECKER_DARK,
-  PLANE_HALF_EXTENT,
-  CAMERA_POSITION,
+  AMBIENT_INTENSITY,
+  CAMERA_FAR,
   CAMERA_FOV,
   CAMERA_NEAR,
-  CAMERA_FAR,
-  LIGHT_POSITION,
+  CAMERA_POSITION,
+  CHECKER_DARK,
+  CHECKER_LIGHT,
+  CHECKER_SIZE,
   LIGHT_DIRECTION,
   LIGHT_INTENSITY,
-  AMBIENT_INTENSITY,
+  LIGHT_POSITION,
+  PLANE_HALF_EXTENT,
+  SHADOW_LIGHT_FAR,
+  SHADOW_LIGHT_NEAR,
   SHADOW_MAP_SIZE,
   SHADOW_ORTHO_EXTENT,
-  SHADOW_LIGHT_NEAR,
-  SHADOW_LIGHT_FAR,
 } from '@/config';
+import cubeObj from './assets/teapot2.obj';
+import sceneFS from './shaders/scene.frag.glsl';
+import sceneVS from './shaders/scene.vert.glsl';
+import screenFS from './shaders/screen.frag.glsl';
+import screenVS from './shaders/screen.vert.glsl';
+import shadowFS from './shaders/shadow.frag.glsl';
+import shadowVS from './shaders/shadow.vert.glsl';
 
 function showError(err: Error) {
   const div = document.createElement('div');

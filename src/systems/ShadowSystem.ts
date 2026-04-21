@@ -1,12 +1,12 @@
-import { System } from '@/core/System';
-import { World } from '@/core/World';
-import { RenderContext } from '@/renderer/RenderContext';
+import { Mat4 } from '@/math/Mat4';
 import { Framebuffer } from '@/renderer/Framebuffer';
+import { RenderContext } from '@/renderer/RenderContext';
 import { Shader } from '@/renderer/Shader';
 import { Material } from '@/components/Material';
 import { Mesh } from '@/components/Mesh';
 import { Transform } from '@/components/Transform';
-import { Mat4 } from '@/math/Mat4';
+import { System } from '@/core/System';
+import { World } from '@/core/World';
 
 export class ShadowSystem implements System {
   private material: Material;
