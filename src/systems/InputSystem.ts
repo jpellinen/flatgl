@@ -1,14 +1,6 @@
-import { Vec3 } from '@/math/Vec3';
-import { Camera } from '@/components/Camera';
+import { Input } from '@/components/Input';
+import { World } from '@/core/World';
 import { System } from '@/core/System';
-import {
-  AUTO_ROTATE_SPEED,
-  ORBIT_PITCH_CLAMP,
-  ORBIT_SENSITIVITY,
-  ORBIT_ZOOM_MAX,
-  ORBIT_ZOOM_MIN,
-  ORBIT_ZOOM_SENSITIVITY,
-} from '@/config';
 
 export class InputSystem implements System {
   private dragging = false;
@@ -20,7 +12,7 @@ export class InputSystem implements System {
 
   constructor(
     private canvas: HTMLCanvasElement,
-    private camera: Camera,
+    private world: World,
   ) {
     canvas.addEventListener('pointerdown', this.onDown);
     canvas.addEventListener('pointermove', this.onMove);
@@ -52,41 +44,17 @@ export class InputSystem implements System {
     this.dZoom += e.deltaY;
   };
 
-  update(dt: number): void {
-    const { camera } = this;
-    const offset = camera.position.sub(camera.target);
-    let r = offset.length();
-    const theta = Math.atan2(offset.x, offset.z);
-    const phi = Math.asin(Math.max(-1, Math.min(1, offset.y / r)));
-
-    // Zoom
-    if (this.dZoom !== 0) {
-      r = Math.max(ORBIT_ZOOM_MIN, Math.min(ORBIT_ZOOM_MAX, r + this.dZoom * ORBIT_ZOOM_SENSITIVITY * r));
-      this.dZoom = 0;
+  update(): void {
+    for (const entity of this.world.query(Input)) {
+      const input = this.world.get(entity, Input)!;
+      input.dx = this.dx;
+      input.dy = this.dy;
+      input.dZoom = this.dZoom;
+      input.dragging = this.dragging;
     }
-
-    // Orbit drag
-    let newTheta = theta;
-    let newPhi = phi;
-    if (this.dx !== 0 || this.dy !== 0) {
-      newTheta = theta - this.dx * ORBIT_SENSITIVITY;
-      newPhi = Math.max(
-        -Math.PI / 2 + ORBIT_PITCH_CLAMP,
-        Math.min(Math.PI / 2 - ORBIT_PITCH_CLAMP, phi + this.dy * ORBIT_SENSITIVITY),
-      );
-      this.dx = 0;
-      this.dy = 0;
-    } else if (!this.dragging) {
-      newTheta = theta - AUTO_ROTATE_SPEED * dt;
-    }
-
-    camera.position = camera.target.add(
-      new Vec3(
-        r * Math.cos(newPhi) * Math.sin(newTheta),
-        r * Math.sin(newPhi),
-        r * Math.cos(newPhi) * Math.cos(newTheta),
-      ),
-    );
+    this.dx = 0;
+    this.dy = 0;
+    this.dZoom = 0;
   }
 
   destroy(): void {

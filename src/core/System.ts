@@ -1,3 +1,3 @@
 export interface System {
-  update(dt: number): void;
+  update(dt?: number): void;
 }

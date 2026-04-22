@@ -21,8 +21,7 @@ export class ShadowSystem implements System {
     this.material = new Material(context, shader);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  update(_dt: number): void {
+  update(): void {
     const { gl } = this.context;
 
     this.target.bind();

@@ -7,16 +7,22 @@ import { Shader } from '../src/renderer/Shader';
 import { Texture } from '../src/renderer/Texture';
 import { Camera } from '../src/components/Camera';
 import { DirectionalLight } from '../src/components/DirectionalLight';
+import { Input } from '../src/components/Input';
 import { Material } from '../src/components/Material';
 import { Mesh } from '../src/components/Mesh';
+import { Script } from '../src/components/Script';
 import { Transform } from '../src/components/Transform';
+import type { ScriptBehaviour } from '../src/components/Script';
+import type { Entity } from '../src/core/Entity';
 import { World } from '../src/core/World';
 import { InputSystem } from '../src/systems/InputSystem';
 import { RenderSystem } from '../src/systems/RenderSystem';
+import { ScriptSystem } from '../src/systems/ScriptSystem';
 import { ShadowSystem } from '../src/systems/ShadowSystem';
 import { ObjLoader } from '../src/loaders/ObjLoader';
 import {
   AMBIENT_INTENSITY,
+  AUTO_ROTATE_SPEED,
   CAMERA_FAR,
   CAMERA_FOV,
   CAMERA_NEAR,
@@ -27,6 +33,11 @@ import {
   LIGHT_DIRECTION,
   LIGHT_INTENSITY,
   LIGHT_POSITION,
+  ORBIT_PITCH_CLAMP,
+  ORBIT_SENSITIVITY,
+  ORBIT_ZOOM_MAX,
+  ORBIT_ZOOM_MIN,
+  ORBIT_ZOOM_SENSITIVITY,
   PLANE_HALF_EXTENT,
   SHADOW_LIGHT_FAR,
   SHADOW_LIGHT_NEAR,
@@ -40,6 +51,49 @@ import screenFS from '../src/shaders/screen.frag.glsl';
 import screenVS from '../src/shaders/screen.vert.glsl';
 import shadowFS from '../src/shaders/shadow.frag.glsl';
 import shadowVS from '../src/shaders/shadow.vert.glsl';
+
+class CameraOrbitBehaviour implements ScriptBehaviour {
+  onUpdate(entity: Entity, world: World, dt: number): void {
+    const camera = world.get(entity, Camera);
+    const input = world.get(entity, Input);
+    if (!camera || !input) return;
+
+    const offset = camera.position.sub(camera.target);
+    let r = offset.length();
+    const theta = Math.atan2(offset.x, offset.z);
+    const phi = Math.asin(Math.max(-1, Math.min(1, offset.y / r)));
+
+    if (input.dZoom !== 0) {
+      r = Math.max(
+        ORBIT_ZOOM_MIN,
+        Math.min(ORBIT_ZOOM_MAX, r + input.dZoom * ORBIT_ZOOM_SENSITIVITY * r),
+      );
+    }
+
+    let newTheta = theta;
+    let newPhi = phi;
+    if (input.dx !== 0 || input.dy !== 0) {
+      newTheta = theta - input.dx * ORBIT_SENSITIVITY;
+      newPhi = Math.max(
+        -Math.PI / 2 + ORBIT_PITCH_CLAMP,
+        Math.min(
+          Math.PI / 2 - ORBIT_PITCH_CLAMP,
+          phi + input.dy * ORBIT_SENSITIVITY,
+        ),
+      );
+    } else if (!input.dragging) {
+      newTheta = theta - AUTO_ROTATE_SPEED * dt;
+    }
+
+    camera.position = camera.target.add(
+      new Vec3(
+        r * Math.cos(newPhi) * Math.sin(newTheta),
+        r * Math.sin(newPhi),
+        r * Math.cos(newPhi) * Math.cos(newTheta),
+      ),
+    );
+  }
+}
 
 function showError(err: Error) {
   const div = document.createElement('div');
@@ -74,7 +128,6 @@ function createScenePass(
   pass: RenderSystem;
   modelMaterial: Material;
   planeMaterial: Material;
-  camera: Camera;
   checkerTex: Texture;
 } {
   const shader = Shader.fromSource(context, sceneVS, sceneFS);
@@ -184,6 +237,8 @@ function createScenePass(
   );
   const cameraEntity = world.create();
   world.add(cameraEntity, camera);
+  world.add(cameraEntity, new Input());
+  world.add(cameraEntity, new Script(new CameraOrbitBehaviour()));
 
   const aspect = canvas.width / canvas.height;
   return {
@@ -191,7 +246,6 @@ function createScenePass(
     pass: new RenderSystem(context, world, fb, aspect),
     modelMaterial,
     planeMaterial,
-    camera,
     checkerTex,
   };
 }
@@ -263,7 +317,6 @@ function init(): void {
     pass: pass1,
     modelMaterial,
     planeMaterial,
-    camera,
     checkerTex,
   } = createScenePass(context, canvas, fb);
 
@@ -287,7 +340,8 @@ function init(): void {
     material: screenMaterial,
     world: screenWorld,
   } = createScreenPass(context, fb, 1);
-  const inputSystem = new InputSystem(canvas, camera);
+  const inputSystem = new InputSystem(canvas, sceneWorld);
+  const scriptSystem = new ScriptSystem(sceneWorld);
 
   function resize(): void {
     canvas.width = Math.round(canvas.clientWidth * devicePixelRatio);
@@ -307,6 +361,7 @@ function init(): void {
     cancelAnimationFrame(rafHandle);
     window.removeEventListener('resize', resize);
     inputSystem.destroy();
+    scriptSystem.destroyAll();
     shadowPass.destroy();
     shadowFb.destroy();
     fb.destroy();
@@ -325,10 +380,11 @@ function init(): void {
     try {
       const dt = (time - lastTime) / 1000;
       lastTime = time;
-      inputSystem.update(dt);
-      shadowPass.update(dt);
-      pass1.update(dt);
-      pass2.update(dt);
+      inputSystem.update();
+      scriptSystem.update(dt);
+      shadowPass.update();
+      pass1.update();
+      pass2.update();
     } catch (err) {
       showError(err as Error);
       return;

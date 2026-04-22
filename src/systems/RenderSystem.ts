@@ -19,8 +19,7 @@ export class RenderSystem implements System {
   setTarget(fb: Framebuffer): void { this.target = fb; }
   setAspect(aspect: number): void { this.aspect = aspect; }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  update(_dt: number): void {
+  update(): void {
     const { gl } = this.context;
 
     if (this.target) {
