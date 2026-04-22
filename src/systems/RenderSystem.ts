@@ -5,15 +5,40 @@ import { Framebuffer } from '@/renderer/Framebuffer';
 import { Mesh } from '@/components/Mesh';
 import { Material } from '@/components/Material';
 import { Transform } from '@/components/Transform';
-import { DirectionalLight } from '@/components/DirectionalLight';
-import { Camera } from '@/components/Camera';
+import { Mat4 } from '@/math/Mat4';
+import { Vec3 } from '@/math/Vec3';
+
+export interface CameraLike {
+  viewMatrix(): Mat4;
+  projectionMatrix(aspect: number): Mat4;
+  readonly position: Vec3;
+}
+
+export interface LightState {
+  direction: Vec3;
+  color: Vec3;
+  intensity: number;
+  ambient: number;
+}
+
+type Plane = [number, number, number, number];
+
+function inFrustum(planes: Plane[], center: Vec3, radius: number): boolean {
+  for (const [a, b, c, d] of planes) {
+    if (a * center.x + b * center.y + c * center.z + d < -radius) return false;
+  }
+  return true;
+}
 
 export class RenderSystem implements System {
   constructor(
     private context: RenderContext,
     private world: World,
+    private camera: CameraLike,
+    private light: LightState,
     private target?: Framebuffer,
-    private aspect?: number,
+    private aspect: number = 1,
+    private clearColor: [number, number, number, number] = [0.08, 0.08, 0.12, 1],
   ) {}
 
   setTarget(fb: Framebuffer): void { this.target = fb; }
@@ -29,36 +54,39 @@ export class RenderSystem implements System {
       gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
     }
 
-    gl.clearColor(0, 0, 0, 1);
+    gl.clearColor(...this.clearColor);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    const lightEntity = this.world.query(DirectionalLight)[0];
-    const light = lightEntity !== undefined ? this.world.get(lightEntity, DirectionalLight)! : null;
-
-    const cameraEntity = this.world.query(Camera)[0];
-    const camera = cameraEntity !== undefined ? this.world.get(cameraEntity, Camera) : undefined;
+    const view = this.camera.viewMatrix();
+    const proj = this.camera.projectionMatrix(this.aspect);
+    const planes = proj.multiply(view).frustumPlanes();
 
     const groups = new Map<Material, number[]>();
     for (const entity of this.world.query(Mesh, Material)) {
+      const mesh = this.world.get(entity, Mesh)!;
+      const transform = this.world.get(entity, Transform);
+      const center = transform?.position ?? new Vec3(0, 0, 0);
+
+      if (mesh.boundingSphere !== null && !inFrustum(planes, center, mesh.boundingSphere.radius)) continue;
+
       const mat = this.world.get(entity, Material)!;
       let group = groups.get(mat);
       if (!group) { group = []; groups.set(mat, group); }
       group.push(entity);
     }
 
+    const { direction, color, intensity, ambient } = this.light;
+    const camPos = this.camera.position;
+
     for (const [material, entities] of groups) {
       material.bind();
-      if (camera && this.aspect !== undefined) {
-        material.setMatrix4('u_view', camera.viewMatrix().array);
-        material.setMatrix4('u_projection', camera.projectionMatrix(this.aspect).array);
-        material.setVec3('u_cameraPos', camera.position.x, camera.position.y, camera.position.z);
-      }
-      if (light) {
-        material.setVec3('u_lightDir', light.direction.x, light.direction.y, light.direction.z);
-        material.setVec3('u_lightColor', light.color.x, light.color.y, light.color.z);
-        material.setFloat('u_lightIntensity', light.intensity);
-        material.setFloat('u_ambientIntensity', light.ambient);
-      }
+      material.setMatrix4('u_view', view.array);
+      material.setMatrix4('u_projection', proj.array);
+      material.setVec3('u_cameraPos', camPos.x, camPos.y, camPos.z);
+      material.setVec3('u_lightDir', direction.x, direction.y, direction.z);
+      material.setVec3('u_lightColor', color.x, color.y, color.z);
+      material.setFloat('u_lightIntensity', intensity);
+      material.setFloat('u_ambientIntensity', ambient);
       for (const entity of entities) {
         const transform = this.world.get(entity, Transform);
         if (transform) material.setMatrix4('u_model', transform.matrix().array);

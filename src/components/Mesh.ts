@@ -1,6 +1,7 @@
 import { RenderContext } from '@/renderer/RenderContext';
 import { Resource } from '@/renderer/Resource';
 import { Buffer } from '@/renderer/Buffer';
+import { Vec3 } from '@/math/Vec3';
 
 interface AttribDescriptor {
   loc: number;
@@ -21,6 +22,8 @@ export class Mesh extends Resource {
   readonly mode: number;
   private vao: WebGLVertexArrayObject;
   private ibo: WebGLBuffer | null = null;
+  /** @internal — set by engine.createMesh(); used for frustum culling */
+  boundingSphere: { center: Vec3; radius: number } | null = null;
 
   constructor(
     context: RenderContext,

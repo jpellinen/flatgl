@@ -10,6 +10,8 @@ uniform float u_lightIntensity;
 uniform float u_ambientIntensity;
 uniform vec3 u_baseColor;
 uniform vec3 u_cameraPos;
+uniform float u_specular;
+uniform float u_receiveShadows;
 
 in vec3 v_normal;
 in vec3 v_worldPos;
@@ -36,7 +38,7 @@ void main() {
   projCoords.z -= 0.005;
 
   float shadow;
-  if (projCoords.z > 1.0) {
+  if (u_receiveShadows < 0.5 || projCoords.z > 1.0) {
     shadow = 1.0;
   } else {
     vec2 texelSize = vec2(3.0) / vec2(textureSize(u_shadowMap, 0));
@@ -53,7 +55,7 @@ void main() {
 
   vec3 V = normalize(u_cameraPos - v_worldPos);
   vec3 H = normalize(L + V);
-  float specular = pow(max(dot(N, H), 0.0), 32.0) * 0.4;
+  float specular = pow(max(dot(N, H), 0.0), 32.0) * u_specular;
 
   vec3 light = u_ambientIntensity * vec3(1.0)
              + u_lightIntensity * (diffuse + specular) * u_lightColor * shadow;

@@ -9,7 +9,7 @@ export class Material extends Resource {
   private vec3s = new Map<string, [number, number, number]>();
   private mat4s = new Map<string, Float32Array>();
 
-  constructor(context: RenderContext, readonly shader: Shader) {
+  constructor(context: RenderContext, private shader: Shader) {
     super(context);
   }
 
