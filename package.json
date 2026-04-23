@@ -14,8 +14,8 @@
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
-    "build:demo": "esbuild examples/demo.ts --bundle --outfile=dist/demo.js --loader:.glsl=text --loader:.obj=text",
-    "dev:demo": "esbuild examples/demo.ts --bundle --outfile=dist/demo.js --loader:.glsl=text --loader:.obj=text --watch --serve=8080 --servedir=.",
+    "build:demo": "esbuild examples/demo.ts --bundle --outfile=dist/demo.js --loader:.glsl=text --loader:.obj=text --loader:.png=dataurl",
+    "dev:demo": "esbuild examples/demo.ts --bundle --outfile=dist/demo.js --loader:.glsl=text --loader:.obj=text --loader:.png=dataurl --watch --serve=8080 --servedir=.",
     "lint": "eslint src/**/*.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

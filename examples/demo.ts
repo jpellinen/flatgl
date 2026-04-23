@@ -1,7 +1,13 @@
 import { Engine, Script, Transform, Vec3, ObjLoader } from '../src/index';
 import type { ScriptBehaviour, Entity } from '../src/index';
 import type { World } from '../src/core/World';
-import modelSrc from './assets/tree.obj';
+
+import treeSrc from './assets/tree.obj';
+import treePng from './assets/tree.png';
+import rockSrc from './assets/rock.obj';
+import rockPng from './assets/rock.png';
+import campfireSrc from './assets/campfire.obj';
+import campfirePng from './assets/campfire.png';
 
 function showError(err: unknown): void {
   const div = document.createElement('div');
@@ -43,7 +49,7 @@ function makePlane(halfExtent: number): {
   return { vertices, indices };
 }
 
-try {
+async function init(): Promise<void> {
   const canvas = document.getElementById('glcanvas');
   if (!(canvas instanceof HTMLCanvasElement))
     throw new Error('Canvas not found');
@@ -57,17 +63,31 @@ try {
   const { world, input } = engine;
 
   const checkerTex = engine.createTexture(checkerboard(8), 8, 8);
+  const treeTex = await engine.loadTexture(treePng);
+  const rockTex = await engine.loadTexture(rockPng);
+  const campfireTex = await engine.loadTexture(campfirePng);
 
-  const modelMesh = engine.createMesh(ObjLoader.parse(modelSrc));
-  const modelMat = engine.createMaterial({
-    color: new Vec3(0.9, 0.8, 0.6),
-    texture: checkerTex,
+  const treeMesh = engine.createMesh(ObjLoader.parse(treeSrc));
+  const treeMat = engine.createMaterial({
+    texture: treeTex,
+    specular: 0.0,
+  });
+
+  const rockMesh = engine.createMesh(ObjLoader.parse(rockSrc));
+  const rockMat = engine.createMaterial({
+    texture: rockTex,
+  });
+
+  const campfireMesh = engine.createMesh(ObjLoader.parse(campfireSrc));
+  const campfireMat = engine.createMaterial({
+    texture: campfireTex,
+    specular: 0.0,
   });
 
   const groundMesh = engine.createMesh(makePlane(6));
   const groundMat = engine.createMaterial({
     color: new Vec3(0.5, 0.75, 0.5),
-    texture: checkerTex,
+    //texture: checkerTex,
   });
 
   const ground = world.create();
@@ -75,10 +95,20 @@ try {
   world.add(ground, groundMat);
   world.add(ground, new Transform(new Vec3(0, 0, 0)));
 
-  const model = world.create();
-  world.add(model, modelMesh);
-  world.add(model, modelMat);
-  world.add(model, new Transform());
+  const tree = world.create();
+  world.add(tree, treeMesh);
+  world.add(tree, treeMat);
+  world.add(tree, new Transform(new Vec3(-2, 0, 2)));
+
+  const rock = world.create();
+  world.add(rock, rockMesh);
+  world.add(rock, rockMat);
+  world.add(rock, new Transform(new Vec3(2, 0, 0)));
+
+  const campfire = world.create();
+  world.add(campfire, campfireMesh);
+  world.add(campfire, campfireMat);
+  world.add(campfire, new Transform());
 
   // Orbit camera: auto-rotate, drag to orbit, scroll to zoom
   class OrbitCamera implements ScriptBehaviour {
@@ -114,10 +144,10 @@ try {
 
       engine.camera.position = new Vec3(
         this.radius * Math.cos(this.phi) * Math.sin(this.theta),
-        this.radius * Math.sin(this.phi),
+        this.radius * Math.sin(this.phi) + 1,
         this.radius * Math.cos(this.phi) * Math.cos(this.theta),
       );
-      engine.camera.target = new Vec3(0, 0, 0);
+      engine.camera.target = new Vec3(0, 1, 0);
     }
   }
 
@@ -128,6 +158,6 @@ try {
     stop();
     engine.destroy();
   });
-} catch (err) {
-  showError(err);
 }
+
+init().catch(showError);

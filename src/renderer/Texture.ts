@@ -110,6 +110,7 @@ export class Texture extends Resource {
       const img = new Image();
       img.onload = () => {
         const gl = context.gl;
+        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
         resolve(
           Texture.configure(context, {
             wrap: gl.REPEAT,
