@@ -10,8 +10,8 @@ import { Shader } from '../renderer/Shader';
 import { Texture } from '../renderer/Texture';
 import { Mesh } from '../components/Mesh';
 import { Material } from '../components/Material';
-import { TopDownCamera } from './TopDownCamera';
-import type { TopDownCameraOptions } from './TopDownCamera';
+import { Camera } from './Camera';
+import type { CameraOptions } from './Camera';
 import { EngineInputSystem } from './InputSystem';
 import type { InputSnapshot } from './InputSystem';
 import { Mat4 } from '../math/Mat4';
@@ -25,7 +25,7 @@ import shadowFragSrc from '../shaders/shadow.frag.glsl';
 import screenVertSrc from '../shaders/screen.vert.glsl';
 import screenFragSrc from '../shaders/screen.frag.glsl';
 
-export type { TopDownCameraOptions };
+export type { CameraOptions };
 
 export interface LightOptions {
   direction?: Vec3;
@@ -49,24 +49,24 @@ export interface MaterialOptions {
 
 export interface EngineOptions {
   canvas: HTMLCanvasElement;
-  camera?: TopDownCameraOptions;
+  camera?: CameraOptions;
   light?: LightOptions;
   postProcess?: PostProcessOptions;
 }
 
 const SHADOW_MAP_SIZE = 2048;
 
-function shadowExtentForCamera(camera: TopDownCamera): number {
+function shadowExtentForCamera(camera: Camera): number {
   if (camera.orthographic) return camera.orthoSize * 1.5;
-  const dist = camera.height / Math.sin(camera.pitch);
+  const dist = camera.position.sub(camera.target).length();
   const viewRadius = dist * Math.tan(camera.fov / 2);
-  const zOffset = camera.height / Math.tan(camera.pitch);
-  return (zOffset + viewRadius) * 1.5;
+  return viewRadius * 3;
 }
 
 export class Engine {
   readonly world: World;
-  readonly camera: TopDownCamera;
+  readonly camera: Camera;
+  readonly cameraEntity: Entity;
 
   private canvas: HTMLCanvasElement;
   private context: RenderContext;
@@ -87,7 +87,7 @@ export class Engine {
     this.canvas = options.canvas;
     this.context = RenderContext.create(options.canvas);
 
-    this.camera = new TopDownCamera(options.camera);
+    this.camera = new Camera(options.camera);
     this.postProcessOpts = options.postProcess ?? {};
 
     // Light
@@ -95,9 +95,9 @@ export class Engine {
     const lightDir = rawDir.normalize();
     this.lightState = {
       direction: lightDir,
-      color: options.light?.color ?? new Vec3(1, 1, 1),
-      intensity: options.light?.intensity ?? 0.8,
-      ambient: options.light?.ambient ?? 0.25,
+      color: options.light?.color ?? new Vec3(1.0, 0.88, 0.5),
+      intensity: options.light?.intensity ?? 1.0,
+      ambient: options.light?.ambient ?? 0.45,
     };
 
     // Light space matrix for shadow mapping
@@ -130,6 +130,7 @@ export class Engine {
 
     // ECS world + systems
     this.world = new World();
+    this.cameraEntity = this.world.create();
     this.scriptSystem = new ScriptSystem(this.world);
 
     const shadowShader = Shader.fromSource(this.context, shadowVertSrc, shadowFragSrc);

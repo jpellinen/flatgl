@@ -47,6 +47,7 @@ void main() {
       shadow += texture(u_shadowMap,
         vec3(projCoords.xy + POISSON[i] * texelSize, projCoords.z));
     shadow /= 9.0;
+    shadow = 0.4 + 0.6 * shadow;
   }
 
   vec3 N = normalize(v_normal);
@@ -57,7 +58,7 @@ void main() {
   vec3 H = normalize(L + V);
   float specular = pow(max(dot(N, H), 0.0), 32.0) * u_specular;
 
-  vec3 light = u_ambientIntensity * vec3(1.0)
+  vec3 light = u_ambientIntensity * vec3(0.45, 0.55, 1.0)
              + u_lightIntensity * (diffuse + specular) * u_lightColor * shadow;
 
   fragColor = texture(u_texture, v_uv) * vec4(u_baseColor, 1.0) * vec4(light, 1.0);

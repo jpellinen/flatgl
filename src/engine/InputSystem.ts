@@ -1,5 +1,5 @@
 import { Vec3 } from '../math/Vec3';
-import { TopDownCamera } from './TopDownCamera';
+import { Camera } from './Camera';
 
 export interface InputSnapshot {
   isDown(key: string): boolean;
@@ -9,6 +9,7 @@ export interface InputSnapshot {
   readonly mouseDown: boolean;
   readonly mouseHeld: boolean;
   readonly mouseUp: boolean;
+  readonly wheelDelta: number;
 }
 
 class InputSnapshotImpl implements InputSnapshot {
@@ -18,6 +19,7 @@ class InputSnapshotImpl implements InputSnapshot {
   mouseDown = false;
   mouseHeld = false;
   mouseUp = false;
+  wheelDelta = 0;
 
   isDown(key: string): boolean {
     return (this.keys as Set<string>).has(key);
@@ -30,14 +32,16 @@ export class EngineInputSystem {
   private mouseIsDown = false;
   private mouseWasDown = false;
   private rawMousePixel = { x: 0, y: 0 };
+  private accWheelDelta = 0;
 
   private onKeyDown: (e: KeyboardEvent) => void;
   private onKeyUp: (e: KeyboardEvent) => void;
   private onMouseMove: (e: MouseEvent) => void;
   private onMouseDown: (e: MouseEvent) => void;
   private onMouseUp: (e: MouseEvent) => void;
+  private onWheel: (e: WheelEvent) => void;
 
-  constructor(private canvas: HTMLCanvasElement, private camera: TopDownCamera) {
+  constructor(private canvas: HTMLCanvasElement, private camera: Camera) {
     this.onKeyDown = (e: KeyboardEvent) => { this.heldKeys.add(e.key); };
     this.onKeyUp = (e: KeyboardEvent) => { this.heldKeys.delete(e.key); };
     this.onMouseMove = (e: MouseEvent) => {
@@ -49,12 +53,17 @@ export class EngineInputSystem {
     };
     this.onMouseDown = (e: MouseEvent) => { if (e.button === 0) this.mouseIsDown = true; };
     this.onMouseUp   = (e: MouseEvent) => { if (e.button === 0) this.mouseIsDown = false; };
+    this.onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      this.accWheelDelta += e.deltaY;
+    };
 
     window.addEventListener('keydown', this.onKeyDown);
     window.addEventListener('keyup', this.onKeyUp);
     canvas.addEventListener('mousemove', this.onMouseMove);
     canvas.addEventListener('mousedown', this.onMouseDown);
     canvas.addEventListener('mouseup', this.onMouseUp);
+    canvas.addEventListener('wheel', this.onWheel, { passive: false });
   }
 
   update(aspect: number): void {
@@ -66,6 +75,8 @@ export class EngineInputSystem {
     snap.mouseHeld = this.mouseIsDown;
     snap.mouseUp = !this.mouseIsDown && this.mouseWasDown;
     this.mouseWasDown = this.mouseIsDown;
+    snap.wheelDelta = this.accWheelDelta;
+    this.accWheelDelta = 0;
     snap.mouseWorld = this.unprojectToGround(this.rawMousePixel.x, this.rawMousePixel.y, aspect);
   }
 
@@ -101,6 +112,7 @@ export class EngineInputSystem {
     this.canvas.removeEventListener('mousemove', this.onMouseMove);
     this.canvas.removeEventListener('mousedown', this.onMouseDown);
     this.canvas.removeEventListener('mouseup', this.onMouseUp);
+    this.canvas.removeEventListener('wheel', this.onWheel);
   }
 }
 

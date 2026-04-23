@@ -25,7 +25,7 @@ export type {
   LightOptions,
   PostProcessOptions,
   MaterialOptions,
+  CameraOptions,
 } from './engine/Engine';
-export { TopDownCamera } from './engine/TopDownCamera';
-export type { TopDownCameraOptions } from './engine/TopDownCamera';
+export { Camera } from './engine/Camera';
 export type { InputSnapshot } from './engine/InputSystem';
