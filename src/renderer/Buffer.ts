@@ -23,7 +23,29 @@ export class Buffer extends Resource {
 
   setAttrib(loc: number, size: number, stride: number, offset: number): void {
     this.gl.enableVertexAttribArray(loc);
-    this.gl.vertexAttribPointer(loc, size, this.gl.FLOAT, false, stride, offset);
+    this.gl.vertexAttribPointer(
+      loc,
+      size,
+      this.gl.FLOAT,
+      false,
+      stride,
+      offset,
+    );
+  }
+
+  setInstanceAttrib(
+    loc: number,
+    size: number,
+    stride: number,
+    offset: number,
+  ): void {
+    this.setAttrib(loc, size, stride, offset);
+    this.gl.vertexAttribDivisor(loc, 1);
+  }
+
+  update(data: Float32Array, byteOffset = 0): void {
+    this.bind();
+    this.gl.bufferSubData(this.gl.ARRAY_BUFFER, byteOffset, data);
   }
 
   destroy(): void {

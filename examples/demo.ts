@@ -8,6 +8,7 @@ import rockSrc from './assets/rock.obj';
 import rockPng from './assets/rock.png';
 import campfireSrc from './assets/campfire.obj';
 import campfirePng from './assets/campfire.png';
+import firePng from './assets/fire.png';
 
 function showError(err: unknown): void {
   const div = document.createElement('div');
@@ -22,7 +23,7 @@ function checkerboard(size: number): Uint8Array {
   const data = new Uint8Array(size * size * 4);
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
-      const v = (x + y) % 2 === 0 ? 255 : 128;
+      const v = (x + y) % 2 === 0 ? 255 : 248;
       const i = (y * size + x) * 4;
       data[i] = v;
       data[i + 1] = v;
@@ -66,6 +67,7 @@ async function init(): Promise<void> {
   const treeTex = await engine.loadTexture(treePng);
   const rockTex = await engine.loadTexture(rockPng);
   const campfireTex = await engine.loadTexture(campfirePng);
+  const fireTex = await engine.loadTexture(firePng);
 
   const treeMesh = engine.createMesh(ObjLoader.parse(treeSrc));
   const treeMat = engine.createMaterial({
@@ -86,8 +88,8 @@ async function init(): Promise<void> {
 
   const groundMesh = engine.createMesh(makePlane(6));
   const groundMat = engine.createMaterial({
-    color: new Vec3(0.5, 0.75, 0.5),
-    //texture: checkerTex,
+    color: new Vec3(0.6, 0.9, 0.4),
+    texture: checkerTex,
   });
 
   const ground = world.create();
@@ -109,6 +111,22 @@ async function init(): Promise<void> {
   world.add(campfire, campfireMesh);
   world.add(campfire, campfireMat);
   world.add(campfire, new Transform());
+
+  const fireEmitter = engine.createParticleEmitter({
+    rate: 10,
+    lifetime: 1.4,
+    speed: 0.8,
+    spread: 0.2,
+    color: new Vec3(1.0, 0.5, 0.1),
+    colorEnd: new Vec3(0.3, 0.1, 0.0),
+    size: 0.4,
+    sizeEnd: 0.0,
+    gravity: 0.0,
+    texture: fireTex,
+  });
+  const fireOrigin = world.create();
+  world.add(fireOrigin, new Transform(new Vec3(0, 0.2, 0)));
+  world.add(fireOrigin, fireEmitter);
 
   // Orbit camera: auto-rotate, drag to orbit, scroll to zoom
   class OrbitCamera implements ScriptBehaviour {

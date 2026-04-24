@@ -31,7 +31,7 @@ export class ShadowSystem implements System {
     this.material = new Material(context, shader);
   }
 
-  update(): void {
+  render(): void {
     const { gl } = this.context;
 
     this.target.bind();

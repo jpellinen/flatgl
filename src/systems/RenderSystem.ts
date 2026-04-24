@@ -44,7 +44,7 @@ export class RenderSystem implements System {
   setTarget(fb: Framebuffer): void { this.target = fb; }
   setAspect(aspect: number): void { this.aspect = aspect; }
 
-  update(): void {
+  render(): void {
     const { gl } = this.context;
 
     if (this.target) {

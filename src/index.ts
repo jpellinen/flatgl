@@ -26,6 +26,8 @@ export type {
   PostProcessOptions,
   MaterialOptions,
   CameraOptions,
+  ParticleEmitterOptions,
 } from './engine/Engine';
+export { ParticleEmitter } from './components/ParticleEmitter';
 export { Camera } from './engine/Camera';
 export type { InputSnapshot } from './engine/InputSystem';

@@ -3,6 +3,7 @@ import type { Entity } from '../core/Entity';
 import { ScriptSystem } from '../systems/ScriptSystem';
 import { ShadowSystem } from '../systems/ShadowSystem';
 import { RenderSystem, LightState } from '../systems/RenderSystem';
+import { ParticleSystem } from '../systems/ParticleSystem';
 import { RenderContext } from '../renderer/RenderContext';
 import { Framebuffer } from '../renderer/Framebuffer';
 import { Buffer } from '../renderer/Buffer';
@@ -14,6 +15,8 @@ import { Camera } from './Camera';
 import type { CameraOptions } from './Camera';
 import { EngineInputSystem } from './InputSystem';
 import type { InputSnapshot } from './InputSystem';
+import { ParticleEmitter } from '../components/ParticleEmitter';
+import type { ParticleEmitterOptions } from '../components/ParticleEmitter';
 import { Mat4 } from '../math/Mat4';
 import { Vec3 } from '../math/Vec3';
 import type { ObjData } from '../loaders/ObjLoader';
@@ -26,6 +29,7 @@ import screenVertSrc from '../shaders/screen.vert.glsl';
 import screenFragSrc from '../shaders/screen.frag.glsl';
 
 export type { CameraOptions };
+export type { ParticleEmitterOptions };
 
 export interface LightOptions {
   direction?: Vec3;
@@ -81,6 +85,7 @@ export class Engine {
   private scriptSystem: ScriptSystem;
   private shadowSystem: ShadowSystem;
   private renderSystem: RenderSystem;
+  private particleSystem: ParticleSystem;
   private inputSystem: EngineInputSystem;
 
   private constructor(options: EngineOptions) {
@@ -137,6 +142,7 @@ export class Engine {
     this.shadowSystem = new ShadowSystem(this.context, this.world, this.shadowFb, shadowShader, this.lightSpaceMat);
     this.renderSystem = new RenderSystem(this.context, this.world, this.camera, this.lightState, this.sceneFb, 1);
 
+    this.particleSystem = new ParticleSystem(this.context, this.world, this.camera, this.sceneFb);
     this.inputSystem = new EngineInputSystem(options.canvas, this.camera);
   }
 
@@ -172,14 +178,17 @@ export class Engine {
         this.sceneFb = Framebuffer.create(this.context, w, h);
         this.renderSystem.setTarget(this.sceneFb);
         this.renderSystem.setAspect(w / h);
+        this.particleSystem.setTarget(this.sceneFb);
         oldFb.destroy();
       }
 
       const aspect = w / Math.max(h, 1);
       this.inputSystem.update(aspect);
       this.scriptSystem.update(dt);
-      this.shadowSystem.update();
-      this.renderSystem.update();
+      this.particleSystem.update(dt);
+      this.shadowSystem.render();
+      this.renderSystem.render();
+      this.particleSystem.render();
       this.drawScreenPass(w, h);
     };
 
@@ -243,6 +252,7 @@ export class Engine {
 
     mat.setTexture('u_texture', opts?.texture ?? this.defaultTexture, 0);
     mat.setTexture('u_shadowMap', this.shadowFb.texture, 1);
+    mat.bind();
     mat.setMatrix4('u_lightSpaceMatrix', this.lightSpaceMat.array);
     const col = opts?.color;
     mat.setVec3('u_baseColor', col ? col.x : 1, col ? col.y : 1, col ? col.z : 1);
@@ -260,6 +270,10 @@ export class Engine {
     return Texture.load(this.context, url);
   }
 
+  createParticleEmitter(opts?: ParticleEmitterOptions): ParticleEmitter {
+    return new ParticleEmitter(this.context, this.defaultTexture, opts);
+  }
+
   destroyEntity(entity: Entity): void {
     this.scriptSystem.destroyEntity(entity);
   }
@@ -268,6 +282,7 @@ export class Engine {
     this.inputSystem.destroy();
     this.scriptSystem.destroyAll();
     this.shadowSystem.destroy();
+    this.particleSystem.destroy();
     this.world.destroyAll();
     this.shadowFb.destroy();
     this.sceneFb.destroy();
