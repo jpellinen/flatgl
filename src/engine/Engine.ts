@@ -156,6 +156,10 @@ export class Engine {
     return this.inputSystem.snapshot;
   }
 
+  showBoundingSpheres(visible = true): void {
+    this.renderSystem.showBoundingSpheres = visible;
+  }
+
   showStats(visible = true): void {
     if (!visible) { this.statsEl?.remove(); this.statsEl = null; return; }
     if (this.statsEl) return;

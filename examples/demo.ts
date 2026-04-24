@@ -176,6 +176,7 @@ async function init(): Promise<void> {
 
   const stop = engine.start();
   engine.showStats();
+  engine.showBoundingSpheres();
   window.addEventListener('beforeunload', () => {
     stop();
     engine.destroy();

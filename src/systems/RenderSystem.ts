@@ -2,11 +2,16 @@ import { System } from '@/core/System';
 import { World } from '@/core/World';
 import { RenderContext } from '@/renderer/RenderContext';
 import { Framebuffer } from '@/renderer/Framebuffer';
+import { Shader } from '@/renderer/Shader';
+import { Buffer } from '@/renderer/Buffer';
 import { Mesh } from '@/components/Mesh';
 import { Material } from '@/components/Material';
 import { Transform, getWorldMatrix } from '@/components/Transform';
 import { Mat4 } from '@/math/Mat4';
 import { Vec3 } from '@/math/Vec3';
+
+import debugVertSrc from '@/shaders/debug.vert.glsl';
+import debugFragSrc from '@/shaders/debug.frag.glsl';
 
 export interface CameraLike {
   viewMatrix(): Mat4;
@@ -36,6 +41,10 @@ export class RenderSystem implements System {
   visible = 0;
   total = 0;
   batches = 0;
+  showBoundingSpheres = false;
+
+  private debugShader: Shader | null = null;
+  private debugMesh: Mesh | null = null;
 
   constructor(
     private context: RenderContext,
@@ -49,6 +58,51 @@ export class RenderSystem implements System {
 
   setTarget(fb: Framebuffer): void { this.target = fb; }
   setAspect(aspect: number): void { this.aspect = aspect; }
+
+  private initDebug(): void {
+    const N = 32;
+    const verts: number[] = [];
+    for (let i = 0; i < N; i++) {
+      const a0 = (i / N) * Math.PI * 2;
+      const a1 = ((i + 1) / N) * Math.PI * 2;
+      const [c0, s0, c1, s1] = [Math.cos(a0), Math.sin(a0), Math.cos(a1), Math.sin(a1)];
+      verts.push(c0, s0, 0,  c1, s1, 0);  // XY
+      verts.push(c0, 0,  s0, c1, 0,  s1); // XZ
+      verts.push(0,  c0, s0, 0,  c1, s1); // YZ
+    }
+    this.debugShader = Shader.fromSource(this.context, debugVertSrc, debugFragSrc);
+    const buf = new Buffer(this.context, new Float32Array(verts));
+    this.debugMesh = new Mesh(this.context, buf, [
+      { loc: 0, size: 3, stride: 12, offset: 0 },
+    ], { vertexCount: N * 2 * 3, mode: this.context.gl.LINES });
+  }
+
+  private drawBoundingSpheres(view: Mat4, proj: Mat4): void {
+    if (!this.debugShader) this.initDebug();
+    const shader = this.debugShader!;
+    const mesh = this.debugMesh!;
+    const { gl } = this.context;
+    const vp = proj.multiply(view);
+
+    shader.use();
+    const mvpLoc = shader.uniformLocation('u_mvp');
+
+    for (const entity of this.world.query(Mesh)) {
+      const m = this.world.get(entity, Mesh)!;
+      if (!m.boundingSphere) continue;
+
+      const wm = this.world.get(entity, Transform) ? getWorldMatrix(entity, this.world) : Mat4.identity();
+      const a = wm.array, lc = m.boundingSphere.center;
+      const wx = a[0]*lc.x + a[4]*lc.y + a[8]*lc.z  + a[12];
+      const wy = a[1]*lc.x + a[5]*lc.y + a[9]*lc.z  + a[13];
+      const wz = a[2]*lc.x + a[6]*lc.y + a[10]*lc.z + a[14];
+      const r = m.boundingSphere.radius;
+
+      const model = Mat4.translation(new Vec3(wx, wy, wz)).multiply(Mat4.scaling(new Vec3(r, r, r)));
+      if (mvpLoc) gl.uniformMatrix4fv(mvpLoc, false, vp.multiply(model).array);
+      mesh.draw();
+    }
+  }
 
   render(): void {
     const { gl } = this.context;
@@ -112,5 +166,7 @@ export class RenderSystem implements System {
         this.triangles += mesh.indexCount > 0 ? mesh.indexCount / 3 : mesh.vertexCount / 3;
       }
     }
+
+    if (this.showBoundingSpheres) this.drawBoundingSpheres(view, proj);
   }
 }
