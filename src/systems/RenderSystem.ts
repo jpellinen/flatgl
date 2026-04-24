@@ -96,7 +96,10 @@ export class RenderSystem implements System {
       const wx = a[0]*lc.x + a[4]*lc.y + a[8]*lc.z  + a[12];
       const wy = a[1]*lc.x + a[5]*lc.y + a[9]*lc.z  + a[13];
       const wz = a[2]*lc.x + a[6]*lc.y + a[10]*lc.z + a[14];
-      const r = m.boundingSphere.radius;
+      const sx = Math.sqrt(a[0]*a[0] + a[1]*a[1] + a[2]*a[2]);
+      const sy = Math.sqrt(a[4]*a[4] + a[5]*a[5] + a[6]*a[6]);
+      const sz = Math.sqrt(a[8]*a[8] + a[9]*a[9] + a[10]*a[10]);
+      const r = m.boundingSphere.radius * Math.max(sx, sy, sz);
 
       const model = Mat4.translation(new Vec3(wx, wy, wz)).multiply(Mat4.scaling(new Vec3(r, r, r)));
       if (mvpLoc) gl.uniformMatrix4fv(mvpLoc, false, vp.multiply(model).array);
@@ -134,9 +137,18 @@ export class RenderSystem implements System {
     for (const entity of allEntities) {
       const mesh = this.world.get(entity, Mesh)!;
       const worldMat = this.world.get(entity, Transform) ? getWorldMatrix(entity, this.world) : null;
-      const center = worldMat ? new Vec3(worldMat.array[12], worldMat.array[13], worldMat.array[14]) : new Vec3(0, 0, 0);
-
-      if (mesh.boundingSphere !== null && !inFrustum(planes, center, mesh.boundingSphere.radius)) continue;
+      if (mesh.boundingSphere !== null) {
+        const b = worldMat ? worldMat.array : Mat4.identity().array;
+        const lc = mesh.boundingSphere.center;
+        const cx = b[0]*lc.x + b[4]*lc.y + b[8]*lc.z  + b[12];
+        const cy = b[1]*lc.x + b[5]*lc.y + b[9]*lc.z  + b[13];
+        const cz = b[2]*lc.x + b[6]*lc.y + b[10]*lc.z + b[14];
+        const bsx = Math.sqrt(b[0]*b[0] + b[1]*b[1] + b[2]*b[2]);
+        const bsy = Math.sqrt(b[4]*b[4] + b[5]*b[5] + b[6]*b[6]);
+        const bsz = Math.sqrt(b[8]*b[8] + b[9]*b[9] + b[10]*b[10]);
+        const sr = mesh.boundingSphere.radius * Math.max(bsx, bsy, bsz);
+        if (!inFrustum(planes, new Vec3(cx, cy, cz), sr)) continue;
+      }
 
       this.visible++;
       const mat = this.world.get(entity, Material)!;
