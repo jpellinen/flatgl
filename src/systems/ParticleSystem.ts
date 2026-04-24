@@ -9,6 +9,8 @@ import { Mat4 } from '../math/Mat4';
 import { Vec3 } from '../math/Vec3';
 
 export class ParticleSystem implements System {
+  particles = 0;
+
   private context: RenderContext;
   private world: World;
   private camera: Camera;
@@ -41,6 +43,7 @@ export class ParticleSystem implements System {
       const m = getWorldMatrix(entity, this.world).array;
       emitter.simulate(dt, new Vec3(m[12], m[13], m[14]));
     }
+    this.particles = entities.reduce((n, e) => n + (this.world.get(e, ParticleEmitter)?.particleCount ?? 0), 0);
   }
 
   render(): void {

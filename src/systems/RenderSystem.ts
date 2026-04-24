@@ -31,6 +31,12 @@ function inFrustum(planes: Plane[], center: Vec3, radius: number): boolean {
 }
 
 export class RenderSystem implements System {
+  drawCalls = 0;
+  triangles = 0;
+  visible = 0;
+  total = 0;
+  batches = 0;
+
   constructor(
     private context: RenderContext,
     private world: World,
@@ -57,23 +63,34 @@ export class RenderSystem implements System {
     gl.clearColor(...this.clearColor);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
+    this.drawCalls = 0;
+    this.triangles = 0;
+    this.visible = 0;
+    this.total = 0;
+    this.batches = 0;
+
     const view = this.camera.viewMatrix();
     const proj = this.camera.projectionMatrix(this.aspect);
     const planes = proj.multiply(view).frustumPlanes();
 
+    const allEntities = this.world.query(Mesh, Material);
+    this.total = allEntities.length;
+
     const groups = new Map<Material, number[]>();
-    for (const entity of this.world.query(Mesh, Material)) {
+    for (const entity of allEntities) {
       const mesh = this.world.get(entity, Mesh)!;
       const worldMat = this.world.get(entity, Transform) ? getWorldMatrix(entity, this.world) : null;
       const center = worldMat ? new Vec3(worldMat.array[12], worldMat.array[13], worldMat.array[14]) : new Vec3(0, 0, 0);
 
       if (mesh.boundingSphere !== null && !inFrustum(planes, center, mesh.boundingSphere.radius)) continue;
 
+      this.visible++;
       const mat = this.world.get(entity, Material)!;
       let group = groups.get(mat);
       if (!group) { group = []; groups.set(mat, group); }
       group.push(entity);
     }
+    this.batches = groups.size;
 
     const { direction, color, intensity, ambient } = this.light;
     const camPos = this.camera.position;
@@ -88,8 +105,11 @@ export class RenderSystem implements System {
       material.setFloat('u_lightIntensity', intensity);
       material.setFloat('u_ambientIntensity', ambient);
       for (const entity of entities) {
+        const mesh = this.world.get(entity, Mesh)!;
         if (this.world.get(entity, Transform)) material.setMatrix4('u_model', getWorldMatrix(entity, this.world).array);
-        this.world.get(entity, Mesh)!.draw();
+        mesh.draw();
+        this.drawCalls++;
+        this.triangles += mesh.indexCount > 0 ? mesh.indexCount / 3 : mesh.vertexCount / 3;
       }
     }
   }

@@ -19,6 +19,8 @@ function inFrustum(planes: Plane[], center: Vec3, radius: number): boolean {
 }
 
 export class ShadowSystem implements System {
+  drawCalls = 0;
+
   private material: Material;
 
   constructor(
@@ -32,6 +34,7 @@ export class ShadowSystem implements System {
   }
 
   render(): void {
+    this.drawCalls = 0;
     const { gl } = this.context;
 
     this.target.bind();
@@ -50,6 +53,7 @@ export class ShadowSystem implements System {
 
       this.material.setMatrix4('u_model', worldMat.array);
       mesh.draw();
+      this.drawCalls++;
     }
   }
 

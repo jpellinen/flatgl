@@ -87,6 +87,8 @@ export class Engine {
   private renderSystem: RenderSystem;
   private particleSystem: ParticleSystem;
   private inputSystem: EngineInputSystem;
+  private statsEl: HTMLDivElement | null = null;
+  private smoothFps = 0;
 
   private constructor(options: EngineOptions) {
     this.canvas = options.canvas;
@@ -154,6 +156,17 @@ export class Engine {
     return this.inputSystem.snapshot;
   }
 
+  showStats(visible = true): void {
+    if (!visible) { this.statsEl?.remove(); this.statsEl = null; return; }
+    if (this.statsEl) return;
+    const el = document.createElement('div');
+    el.style.cssText =
+      'position:fixed;top:8px;left:8px;padding:6px 10px;background:rgba(0,0,0,0.55);' +
+      'color:#e8e8e8;font:12px/1.6 monospace;border-radius:4px;pointer-events:none;z-index:9998';
+    document.body.appendChild(el);
+    this.statsEl = el;
+  }
+
   start(): () => void {
     let rafId = 0;
     let lastTime = 0;
@@ -190,6 +203,20 @@ export class Engine {
       this.renderSystem.render();
       this.particleSystem.render();
       this.drawScreenPass(w, h);
+
+      if (this.statsEl && dt > 0) {
+        this.smoothFps = this.smoothFps * 0.9 + (1 / dt) * 0.1;
+        const r = this.renderSystem;
+        const s = this.shadowSystem;
+        const p = this.particleSystem;
+        this.statsEl.textContent = [
+          `FPS  ${Math.round(this.smoothFps)}     MS  ${(dt * 1000).toFixed(1)}`,
+          `DC   ${r.drawCalls}  (shadow ${s.drawCalls})`,
+          `TRI  ${r.triangles.toLocaleString()}`,
+          `VIS  ${r.visible}/${r.total}  BAT ${r.batches}`,
+          `PAR  ${p.particles}`,
+        ].join('\n');
+      }
     };
 
     rafId = requestAnimationFrame(tick);

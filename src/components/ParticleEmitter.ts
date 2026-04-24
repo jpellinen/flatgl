@@ -59,6 +59,8 @@ export class ParticleEmitter {
   private rotationSpeeds: Float32Array;
   private instanceData: Float32Array;
   private liveCount = 0;
+
+  get particleCount(): number { return this.liveCount; }
   private emitAccum = 0;
 
   constructor(context: RenderContext, defaultTexture: Texture, opts: ParticleEmitterOptions = {}) {

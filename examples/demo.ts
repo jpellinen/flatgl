@@ -175,6 +175,7 @@ async function init(): Promise<void> {
   world.add(engine.cameraEntity, new Script(new OrbitCamera()));
 
   const stop = engine.start();
+  engine.showStats();
   window.addEventListener('beforeunload', () => {
     stop();
     engine.destroy();
