@@ -23,7 +23,7 @@ function checkerboard(size: number): Uint8Array {
   const data = new Uint8Array(size * size * 4);
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
-      const v = (x + y) % 2 === 0 ? 255 : 248;
+      const v = (x + y) % 2 === 0 ? 255 : 236;
       const i = (y * size + x) * 4;
       data[i] = v;
       data[i + 1] = v;
@@ -125,7 +125,10 @@ async function init(): Promise<void> {
     texture: fireTex,
   });
   const fireOrigin = world.create();
-  world.add(fireOrigin, new Transform(new Vec3(0, 0.2, 0)));
+  world.add(
+    fireOrigin,
+    new Transform(new Vec3(0, 0.2, 0), undefined, undefined, campfire),
+  );
   world.add(fireOrigin, fireEmitter);
 
   // Orbit camera: auto-rotate, drag to orbit, scroll to zoom

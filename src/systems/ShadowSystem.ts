@@ -5,7 +5,7 @@ import { RenderContext } from '@/renderer/RenderContext';
 import { Shader } from '@/renderer/Shader';
 import { Material } from '@/components/Material';
 import { Mesh } from '@/components/Mesh';
-import { Transform } from '@/components/Transform';
+import { Transform, getWorldMatrix } from '@/components/Transform';
 import { System } from '@/core/System';
 import { World } from '@/core/World';
 
@@ -44,11 +44,11 @@ export class ShadowSystem implements System {
 
     for (const entity of this.world.query(Mesh, Transform)) {
       const mesh = this.world.get(entity, Mesh)!;
-      const transform = this.world.get(entity, Transform)!;
+      const worldMat = getWorldMatrix(entity, this.world);
+      const center = new Vec3(worldMat.array[12], worldMat.array[13], worldMat.array[14]);
+      if (mesh.boundingSphere !== null && !inFrustum(planes, center, mesh.boundingSphere.radius)) continue;
 
-      if (mesh.boundingSphere !== null && !inFrustum(planes, transform.position, mesh.boundingSphere.radius)) continue;
-
-      this.material.setMatrix4('u_model', transform.matrix().array);
+      this.material.setMatrix4('u_model', worldMat.array);
       mesh.draw();
     }
   }

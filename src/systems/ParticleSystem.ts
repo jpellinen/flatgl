@@ -2,10 +2,11 @@ import { RenderContext } from '../renderer/RenderContext';
 import { Framebuffer } from '../renderer/Framebuffer';
 import { Camera } from '../engine/Camera';
 import { ParticleEmitter } from '../components/ParticleEmitter';
-import { Transform } from '../components/Transform';
+import { Transform, getWorldMatrix } from '../components/Transform';
 import { World } from '../core/World';
 import { System } from '../core/System';
 import { Mat4 } from '../math/Mat4';
+import { Vec3 } from '../math/Vec3';
 
 export class ParticleSystem implements System {
   private context: RenderContext;
@@ -37,8 +38,8 @@ export class ParticleSystem implements System {
 
     for (const entity of entities) {
       const emitter = this.world.get(entity, ParticleEmitter)!;
-      const transform = this.world.get(entity, Transform)!;
-      emitter.simulate(dt, transform.position);
+      const m = getWorldMatrix(entity, this.world).array;
+      emitter.simulate(dt, new Vec3(m[12], m[13], m[14]));
     }
   }
 

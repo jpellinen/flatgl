@@ -4,7 +4,7 @@ import { RenderContext } from '@/renderer/RenderContext';
 import { Framebuffer } from '@/renderer/Framebuffer';
 import { Mesh } from '@/components/Mesh';
 import { Material } from '@/components/Material';
-import { Transform } from '@/components/Transform';
+import { Transform, getWorldMatrix } from '@/components/Transform';
 import { Mat4 } from '@/math/Mat4';
 import { Vec3 } from '@/math/Vec3';
 
@@ -64,8 +64,8 @@ export class RenderSystem implements System {
     const groups = new Map<Material, number[]>();
     for (const entity of this.world.query(Mesh, Material)) {
       const mesh = this.world.get(entity, Mesh)!;
-      const transform = this.world.get(entity, Transform);
-      const center = transform?.position ?? new Vec3(0, 0, 0);
+      const worldMat = this.world.get(entity, Transform) ? getWorldMatrix(entity, this.world) : null;
+      const center = worldMat ? new Vec3(worldMat.array[12], worldMat.array[13], worldMat.array[14]) : new Vec3(0, 0, 0);
 
       if (mesh.boundingSphere !== null && !inFrustum(planes, center, mesh.boundingSphere.radius)) continue;
 
@@ -88,8 +88,7 @@ export class RenderSystem implements System {
       material.setFloat('u_lightIntensity', intensity);
       material.setFloat('u_ambientIntensity', ambient);
       for (const entity of entities) {
-        const transform = this.world.get(entity, Transform);
-        if (transform) material.setMatrix4('u_model', transform.matrix().array);
+        if (this.world.get(entity, Transform)) material.setMatrix4('u_model', getWorldMatrix(entity, this.world).array);
         this.world.get(entity, Mesh)!.draw();
       }
     }
