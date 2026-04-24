@@ -1,6 +1,6 @@
 # FlatGL
 
-An opinionated WebGL 2.0 engine for top-down games and game-like apps. Zero runtime dependencies — just TypeScript and direct WebGL2 API calls.
+An opinionated WebGL 2.0 engine for games and game-like apps. Zero runtime dependencies — just TypeScript and direct WebGL2 API calls.
 
 ![WebGL2](https://img.shields.io/badge/WebGL-2.0-blue) ![TypeScript](https://img.shields.io/badge/TypeScript-6.0-blue)
 
@@ -11,10 +11,15 @@ An opinionated WebGL 2.0 engine for top-down games and game-like apps. Zero runt
 - **Shadow mapping** — one directional light with PCF soft shadows
 - **FXAA post-processing** — anti-aliasing + optional contrast/saturation grade
 - **Frustum culling** — camera and light frustums, bounding spheres auto-computed from mesh geometry
-- **Top-down camera** — perspective (default) or orthographic, follows `camera.target`
-- **Keyboard + mouse input** — `engine.input` with `mouseWorld` unprojected to the Y=0 ground plane
+- **Camera** — perspective (default) or orthographic, follows `camera.target`
+- **Keyboard + mouse input** — `engine.input` with `mouseWorld` unprojected to the Y=0 ground plane; scroll wheel zoom
 - **Script behaviours** — `onStart` / `onUpdate` / `onDestroy` lifecycle per entity
+- **Particle system** — GPU-instanced billboard particles with per-particle physics, size/color lerp, and additive or alpha blending
+- **Transform hierarchy** — parent entity references; child transforms inherit parent TRS
 - **OBJ loader** — positions, normals, and UVs with flat-normal fallback
+- **PNG textures** — load via URL or raw `Uint8Array`
+- **Stats overlay** — real-time FPS, draw calls, culling stats, triangle count, particle count
+- **Bounding sphere debug** — visualise per-entity bounding spheres as line circles
 
 ## Quickstart
 
@@ -76,6 +81,8 @@ engine.createMaterial(opts?: MaterialOptions): Material
 engine.createTexture(data: Uint8Array, w: number, h: number): Texture
 engine.loadTexture(url: string): Promise<Texture>
 engine.destroyEntity(entity: Entity): void  // fires onDestroy, then removes
+engine.showStats(element?: HTMLElement): void  // attach real-time stats overlay
+engine.showBoundingSpheres(enabled: boolean): void  // toggle debug circles
 engine.destroy(): void
 ```
 
@@ -127,6 +134,7 @@ input.mouseWorld: Vec3               // unprojected to Y=0 ground plane
 input.mouseDown: boolean             // pressed this frame
 input.mouseHeld: boolean
 input.mouseUp: boolean               // released this frame
+input.wheelDelta: number             // scroll wheel accumulator (zoom)
 ```
 
 ### `ScriptBehaviour`
@@ -140,6 +148,44 @@ interface ScriptBehaviour {
 ```
 
 Use `engine.destroyEntity(entity)` instead of `world.destroy()` to ensure `onDestroy` fires.
+
+### `ParticleEmitter`
+
+Attach to any entity to emit GPU-instanced billboard particles. The emitter inherits the parent entity's `Transform`.
+
+```typescript
+import { ParticleEmitter } from 'flatgl';
+
+const emitter = new ParticleEmitter(texture, {
+  maxParticles: 500,        // default 500
+  rate: 20,                 // particles per second
+  lifetime: 1.5,            // seconds
+  speed: 2,
+  spread: Math.PI / 4,      // cone half-angle
+  gravity: -1,
+  startSize: 0.3,
+  endSize: 0,
+  startColor: new Vec3(1, 0.6, 0.1),
+  endColor: new Vec3(0.5, 0.1, 0),
+  startAlpha: 1,
+  endAlpha: 0,
+  additive: true,           // additive blending; false = alpha blend
+});
+
+world.add(campfireEntity, emitter);
+```
+
+### `Transform` hierarchy
+
+```typescript
+const parent = world.create();
+world.add(parent, new Transform(new Vec3(0, 0, 0)));
+
+const child = world.create();
+const t = new Transform(new Vec3(0, 1, 0));
+t.parent = parent;          // child inherits parent TRS each frame
+world.add(child, t);
+```
 
 ## Usage as a Library
 
@@ -164,7 +210,7 @@ This produces `dist/index.js` (ESM) and `dist/index.d.ts`. Consume via a local p
 npm run dev:demo
 ```
 
-Open `http://localhost:8080`. WASD to move the player, camera follows.
+Open `http://localhost:8080`. The demo scene includes a campfire with particle effects, rocks, and trees loaded from OBJ + PNG assets.
 
 ## Scripts
 
@@ -180,29 +226,30 @@ Open `http://localhost:8080`. WASD to move the player, camera follows.
 
 ```
 src/
-├── index.ts              # Public API (14 exports)
+├── index.ts              # Public API
 ├── engine/               # Engine, TopDownCamera, InputSystem
-├── core/                 # ECS primitives (World, Entity)
-├── components/           # Mesh, Material, Transform, Script
-├── systems/              # RenderSystem, ShadowSystem, ScriptSystem
+├── core/                 # ECS primitives (World, Entity, System)
+├── components/           # Mesh, Material, Transform, Script, ParticleEmitter
+├── systems/              # RenderSystem, ShadowSystem, ScriptSystem, ParticleSystem
 ├── renderer/             # WebGL2 wrappers (Shader, Buffer, Texture, Framebuffer)
 ├── math/                 # Vec3, Mat4
 ├── loaders/              # OBJ parser
-├── shaders/              # GLSL 3.00 ES (scene, shadow, screen/FXAA)
-└── assets/               # .obj model files
+└── shaders/              # GLSL 3.00 ES (scene, shadow, screen/FXAA, particle, debug)
 examples/
-└── demo.ts               # Top-down player movement demo (~80 lines)
+├── demo.ts               # Scene with campfire, rocks, and trees
+└── assets/               # campfire, rock, tree — .obj + .png each; fire.png particle texture
 ```
 
 ## Rendering Pipeline
 
 1. **Shadow pass** — depth-only render from light's perspective into a 2048×2048 texture; culled against light frustum
-2. **Scene pass** — Blinn-Phong shading with PCF soft shadows; culled against camera frustum
-3. **Screen pass** — FXAA anti-aliasing + contrast/saturation grade on a fullscreen quad
+2. **Scene pass** — Blinn-Phong shading with PCF soft shadows; culled against camera frustum; material-batched draw calls
+3. **Particle pass** — GPU-instanced billboard quads, sorted per emitter; additive or alpha blending
+4. **Screen pass** — FXAA anti-aliasing + contrast/saturation grade on a fullscreen quad
 
 ## Tech Stack
 
 - **Language:** TypeScript 6 (strict mode, ES2020 target)
-- **Build:** tsup (library) + esbuild (demo), with custom loaders for `.glsl` and `.obj`
+- **Build:** tsup (library) + esbuild (demo), with custom loaders for `.glsl`, `.obj`, and `.png`
 - **Rendering:** WebGL 2.0 — no external graphics libraries
 - **Linting:** ESLint 9 + typescript-eslint + Prettier
