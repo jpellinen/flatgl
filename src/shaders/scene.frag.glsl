@@ -35,7 +35,7 @@ const vec2 POISSON[9] = vec2[](
 
 void main() {
   vec3 projCoords = v_shadowCoord.xyz / v_shadowCoord.w * 0.5 + 0.5;
-  projCoords.z -= 0.005;
+  projCoords.z -= 0.003;
 
   float shadow;
   if (u_receiveShadows < 0.5 || projCoords.z > 1.0) {
