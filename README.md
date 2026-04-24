@@ -29,15 +29,14 @@ import type { ScriptBehaviour, Entity, World } from 'flatgl';
 
 const engine = Engine.create({
   canvas: document.getElementById('glcanvas') as HTMLCanvasElement,
-  camera: { height: 10, pitch: Math.PI / 3 },
-  light:  { direction: new Vec3(1, 2, 1) },
+  light: { direction: new Vec3(1, 2, 1) },
   postProcess: { fxaa: true },
 });
 
 const { world, input } = engine;
 
 const mesh = engine.createMesh(ObjLoader.parse(objSource));
-const mat  = engine.createMaterial({ color: new Vec3(0.9, 0.8, 0.6) });
+const mat = engine.createMaterial({ color: new Vec3(0.9, 0.8, 0.6) });
 
 class PlayerMove implements ScriptBehaviour {
   onUpdate(entity: Entity, w: World, dt: number): void {
@@ -61,7 +60,10 @@ world.add(player, new Transform());
 world.add(player, new Script(new PlayerMove()));
 
 const stop = engine.start();
-window.addEventListener('beforeunload', () => { stop(); engine.destroy(); });
+window.addEventListener('beforeunload', () => {
+  stop();
+  engine.destroy();
+});
 ```
 
 ## Public API
@@ -92,12 +94,13 @@ engine.destroy(): void
 {
   canvas: HTMLCanvasElement;
   camera?: {
-    height?: number;         // default 10
-    pitch?: number;          // radians from horizontal; default π/3 (~60°)
+    position?: Vec3;         // default (0,6,10)
+    target?: Vec3;           // initial look-at point; default (0,0,0)
     fov?: number;            // default π/4; ignored when orthographic
+    near?: number;           // near clipping plane; default 0.1
+    far?: number;            // far clipping plane; default 200
     orthographic?: boolean;  // default false
     orthoSize?: number;      // half-height world units; default 8
-    target?: Vec3;           // initial look-at point; default (0,0,0)
   };
   light?: {
     direction?: Vec3;        // default (1,2,1).normalize()
@@ -157,11 +160,11 @@ Attach to any entity to emit GPU-instanced billboard particles. The emitter inhe
 import { ParticleEmitter } from 'flatgl';
 
 const emitter = new ParticleEmitter(texture, {
-  maxParticles: 500,        // default 500
-  rate: 20,                 // particles per second
-  lifetime: 1.5,            // seconds
+  maxParticles: 500, // default 500
+  rate: 20, // particles per second
+  lifetime: 1.5, // seconds
   speed: 2,
-  spread: Math.PI / 4,      // cone half-angle
+  spread: Math.PI / 4, // cone half-angle
   gravity: -1,
   startSize: 0.3,
   endSize: 0,
@@ -169,7 +172,7 @@ const emitter = new ParticleEmitter(texture, {
   endColor: new Vec3(0.5, 0.1, 0),
   startAlpha: 1,
   endAlpha: 0,
-  additive: true,           // additive blending; false = alpha blend
+  additive: true, // additive blending; false = alpha blend
 });
 
 world.add(campfireEntity, emitter);
@@ -183,7 +186,7 @@ world.add(parent, new Transform(new Vec3(0, 0, 0)));
 
 const child = world.create();
 const t = new Transform(new Vec3(0, 1, 0));
-t.parent = parent;          // child inherits parent TRS each frame
+t.parent = parent; // child inherits parent TRS each frame
 world.add(child, t);
 ```
 
@@ -214,13 +217,13 @@ Open `http://localhost:8080`. The demo scene includes a campfire with particle e
 
 ## Scripts
 
-| Command | Description |
-|---|---|
-| `npm run build` | Build the library (`dist/index.js` + `dist/index.d.ts`) |
-| `npm run dev` | Build the library in watch mode |
-| `npm run build:demo` | One-time build of the demo |
-| `npm run dev:demo` | Build demo in watch mode, serve on port 8080 |
-| `npm run lint` | Run ESLint on `src/` |
+| Command              | Description                                             |
+| -------------------- | ------------------------------------------------------- |
+| `npm run build`      | Build the library (`dist/index.js` + `dist/index.d.ts`) |
+| `npm run dev`        | Build the library in watch mode                         |
+| `npm run build:demo` | One-time build of the demo                              |
+| `npm run dev:demo`   | Build demo in watch mode, serve on port 8080            |
+| `npm run lint`       | Run ESLint on `src/`                                    |
 
 ## Project Structure
 
