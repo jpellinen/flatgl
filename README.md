@@ -4,6 +4,8 @@ An opinionated WebGL 2.0 engine for games and game-like apps. Zero runtime depen
 
 ![WebGL2](https://img.shields.io/badge/WebGL-2.0-blue) ![TypeScript](https://img.shields.io/badge/TypeScript-6.0-blue)
 
+![Demo screenshot](screenshot.png)
+
 ## Features
 
 - **ECS architecture** — entities, components, and type-safe queries via `World`
