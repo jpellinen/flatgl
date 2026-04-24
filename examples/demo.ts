@@ -4,8 +4,12 @@ import type { World } from '../src/core/World';
 
 import treeSrc from './assets/tree.obj';
 import treePng from './assets/tree.png';
+import logSrc from './assets/log.obj';
+import logPng from './assets/log.png';
 import rockSrc from './assets/rock.obj';
 import rockPng from './assets/rock.png';
+import grassSrc from './assets/grass.obj';
+import grassPng from './assets/grass.png';
 import campfireSrc from './assets/campfire.obj';
 import campfirePng from './assets/campfire.png';
 import firePng from './assets/fire.png';
@@ -65,7 +69,9 @@ async function init(): Promise<void> {
 
   const checkerTex = engine.createTexture(checkerboard(8), 8, 8);
   const treeTex = await engine.loadTexture(treePng);
+  const logTex = await engine.loadTexture(logPng);
   const rockTex = await engine.loadTexture(rockPng);
+  const grassTex = await engine.loadTexture(grassPng);
   const campfireTex = await engine.loadTexture(campfirePng);
   const fireTex = await engine.loadTexture(firePng);
 
@@ -75,9 +81,20 @@ async function init(): Promise<void> {
     specular: 0.0,
   });
 
+  const logMesh = engine.createMesh(ObjLoader.parse(logSrc));
+  const logMat = engine.createMaterial({
+    texture: logTex,
+    specular: 0.0,
+  });
+
   const rockMesh = engine.createMesh(ObjLoader.parse(rockSrc));
   const rockMat = engine.createMaterial({
     texture: rockTex,
+  });
+
+  const grassMesh = engine.createMesh(ObjLoader.parse(grassSrc));
+  const grassMat = engine.createMaterial({
+    texture: grassTex,
   });
 
   const campfireMesh = engine.createMesh(ObjLoader.parse(campfireSrc));
@@ -86,7 +103,7 @@ async function init(): Promise<void> {
     specular: 0.0,
   });
 
-  const groundMesh = engine.createMesh(makePlane(6));
+  const groundMesh = engine.createMesh(makePlane(4));
   const groundMat = engine.createMaterial({
     color: new Vec3(0.6, 0.9, 0.4),
     texture: checkerTex,
@@ -95,22 +112,79 @@ async function init(): Promise<void> {
   const ground = world.create();
   world.add(ground, groundMesh);
   world.add(ground, groundMat);
-  world.add(ground, new Transform(new Vec3(0, 0, 0)));
+  world.add(ground, new Transform());
 
-  const tree = world.create();
-  world.add(tree, treeMesh);
-  world.add(tree, treeMat);
-  world.add(tree, new Transform(new Vec3(-2, 0, 2)));
-
-  const rock = world.create();
-  world.add(rock, rockMesh);
-  world.add(rock, rockMat);
-  world.add(rock, new Transform(new Vec3(2, 0, 0)));
-
+  // Campfire at center
   const campfire = world.create();
   world.add(campfire, campfireMesh);
   world.add(campfire, campfireMat);
   world.add(campfire, new Transform());
+
+  // Three logs radiating outward from the fire, ~120° apart.
+  // Each rotation steps by 2π/3 from the first so they spread evenly.
+  const logBaseRot = -Math.PI * 0.35;
+  for (const [pos, ry] of [
+    [new Vec3(-0.65, 0, -1.4), logBaseRot],
+    [new Vec3(-0.8, 0, 1.4), logBaseRot + (2 / 3) * Math.PI],
+    [new Vec3(1.4, 0, 0.35), logBaseRot + (4 / 3) * Math.PI],
+  ] as [Vec3, number][]) {
+    const e = world.create();
+    world.add(e, logMesh);
+    world.add(e, logMat);
+    world.add(e, new Transform(pos, new Vec3(0, ry, 0)));
+  }
+
+  // Trees ringing the clearing — varied scale
+  for (const [x, z, ry, s] of [
+    [-1.15, 3.1, 0.3, 1.0],
+    [2.6, 2.25, 1.8, 1.15],
+    [3.2, -0.1, 0.9, 0.85],
+    [-1.15, -2.95, 2.5, 1.1],
+    [-2.9, 0.2, 1.2, 0.9],
+  ]) {
+    const e = world.create();
+    world.add(e, treeMesh);
+    world.add(e, treeMat);
+    world.add(
+      e,
+      new Transform(new Vec3(x, 0, z), new Vec3(0, ry, 0), new Vec3(s, s, s)),
+    );
+  }
+
+  // Rocks — varied scale and rotation
+  for (const [x, z, ry, s] of [
+    [2.5, 0.6, 0.0, 0.55],
+    [-2.4, 2.1, 1.1, 1.05],
+    [1.0, -1.1, 1.9, 0.7],
+    [-3.2, -1.7, 0.7, 0.4],
+    [1.85, -1.0, 1.9, 0.35],
+  ]) {
+    const e = world.create();
+    world.add(e, rockMesh);
+    world.add(e, rockMat);
+    world.add(
+      e,
+      new Transform(new Vec3(x, 0, z), new Vec3(0, ry, 0), new Vec3(s, s, s)),
+    );
+  }
+
+  // Grass patches — varied scale and rotation
+  for (const [x, z, ry, s] of [
+    [0.9, 2.5, 0.4, 1.1],
+    [-0.85, 2.25, 1.9, 1.2],
+    [0.25, -3.0, 0.7, 1.0],
+    [-2.9, -2.1, 2.3, 1.2],
+    [2.2, -1.55, 1.1, 1.0],
+    [-1.35, -0.6, -0.1, 0.9],
+  ]) {
+    const e = world.create();
+    world.add(e, grassMesh);
+    world.add(e, grassMat);
+    world.add(
+      e,
+      new Transform(new Vec3(x, 0, z), new Vec3(0, ry, 0), new Vec3(s, s, s)),
+    );
+  }
 
   const fireEmitter = engine.createParticleEmitter({
     rate: 10,
