@@ -67,44 +67,44 @@ async function init(): Promise<void> {
 
   const { world, input } = engine;
 
-  const checkerTex = engine.createTexture(checkerboard(8), 8, 8);
-  const treeTex = await engine.loadTexture(treePng);
-  const logTex = await engine.loadTexture(logPng);
-  const rockTex = await engine.loadTexture(rockPng);
-  const grassTex = await engine.loadTexture(grassPng);
-  const campfireTex = await engine.loadTexture(campfirePng);
-  const fireTex = await engine.loadTexture(firePng);
+  const checkerTex = engine.assets.createTexture(checkerboard(8), 8, 8);
+  const treeTex = await engine.assets.loadTexture(treePng);
+  const logTex = await engine.assets.loadTexture(logPng);
+  const rockTex = await engine.assets.loadTexture(rockPng);
+  const grassTex = await engine.assets.loadTexture(grassPng);
+  const campfireTex = await engine.assets.loadTexture(campfirePng);
+  const fireTex = await engine.assets.loadTexture(firePng);
 
-  const treeMesh = engine.createMesh(ObjLoader.parse(treeSrc));
-  const treeMat = engine.createMaterial({
+  const treeMesh = engine.assets.createMesh(ObjLoader.parse(treeSrc));
+  const treeMat = engine.assets.createMaterial({
     texture: treeTex,
     specular: 0.0,
   });
 
-  const logMesh = engine.createMesh(ObjLoader.parse(logSrc));
-  const logMat = engine.createMaterial({
+  const logMesh = engine.assets.createMesh(ObjLoader.parse(logSrc));
+  const logMat = engine.assets.createMaterial({
     texture: logTex,
     specular: 0.0,
   });
 
-  const rockMesh = engine.createMesh(ObjLoader.parse(rockSrc));
-  const rockMat = engine.createMaterial({
+  const rockMesh = engine.assets.createMesh(ObjLoader.parse(rockSrc));
+  const rockMat = engine.assets.createMaterial({
     texture: rockTex,
   });
 
-  const grassMesh = engine.createMesh(ObjLoader.parse(grassSrc));
-  const grassMat = engine.createMaterial({
+  const grassMesh = engine.assets.createMesh(ObjLoader.parse(grassSrc));
+  const grassMat = engine.assets.createMaterial({
     texture: grassTex,
   });
 
-  const campfireMesh = engine.createMesh(ObjLoader.parse(campfireSrc));
-  const campfireMat = engine.createMaterial({
+  const campfireMesh = engine.assets.createMesh(ObjLoader.parse(campfireSrc));
+  const campfireMat = engine.assets.createMaterial({
     texture: campfireTex,
     specular: 0.0,
   });
 
-  const groundMesh = engine.createMesh(makePlane(4));
-  const groundMat = engine.createMaterial({
+  const groundMesh = engine.assets.createMesh(makePlane(4));
+  const groundMat = engine.assets.createMaterial({
     color: new Vec3(0.6, 0.9, 0.4),
     texture: checkerTex,
   });
@@ -186,7 +186,7 @@ async function init(): Promise<void> {
     );
   }
 
-  const fireEmitter = engine.createParticleEmitter({
+  const fireEmitter = engine.assets.createParticleEmitter({
     rate: 10,
     lifetime: 1.4,
     speed: 0.8,

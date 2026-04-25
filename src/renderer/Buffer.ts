@@ -1,14 +1,22 @@
 import { RenderContext } from './RenderContext';
 import { Resource } from './Resource';
 
+export const BufferUsage = {
+  STATIC_DRAW:  WebGL2RenderingContext.STATIC_DRAW,
+  DYNAMIC_DRAW: WebGL2RenderingContext.DYNAMIC_DRAW,
+  STREAM_DRAW:  WebGL2RenderingContext.STREAM_DRAW,
+} as const;
+
+export type BufferUsage = typeof BufferUsage[keyof typeof BufferUsage];
+
 export class Buffer extends Resource {
   private handle: WebGLBuffer;
 
-  private usage: number;
+  private usage: BufferUsage;
 
-  constructor(context: RenderContext, data: Float32Array, usage?: number) {
+  constructor(context: RenderContext, data: Float32Array, usage?: BufferUsage) {
     super(context);
-    this.usage = usage ?? this.gl.STATIC_DRAW;
+    this.usage = usage ?? BufferUsage.STATIC_DRAW;
 
     const buf = this.gl.createBuffer();
     if (!buf) throw new Error('Failed to create buffer');

@@ -3,6 +3,18 @@ import { Resource } from '@/renderer/Resource';
 import { Buffer } from '@/renderer/Buffer';
 import { Vec3 } from '@/math/Vec3';
 
+export const DrawMode = {
+  TRIANGLES:      WebGL2RenderingContext.TRIANGLES,
+  TRIANGLE_STRIP: WebGL2RenderingContext.TRIANGLE_STRIP,
+  TRIANGLE_FAN:   WebGL2RenderingContext.TRIANGLE_FAN,
+  LINES:          WebGL2RenderingContext.LINES,
+  LINE_STRIP:     WebGL2RenderingContext.LINE_STRIP,
+  LINE_LOOP:      WebGL2RenderingContext.LINE_LOOP,
+  POINTS:         WebGL2RenderingContext.POINTS,
+} as const;
+
+export type DrawMode = typeof DrawMode[keyof typeof DrawMode];
+
 interface AttribDescriptor {
   loc: number;
   size: number;
@@ -13,16 +25,16 @@ interface AttribDescriptor {
 interface MeshOptions {
   indices?: Uint16Array;
   vertexCount?: number;
-  mode?: number;
+  mode?: DrawMode;
 }
 
 export class Mesh extends Resource {
   readonly vertexCount: number;
   readonly indexCount: number;
-  readonly mode: number;
+  readonly mode: DrawMode;
   private vao: WebGLVertexArrayObject;
   private ibo: WebGLBuffer | null = null;
-  /** @internal — set by engine.createMesh(); used for frustum culling */
+  /** @internal — set by engine.assets.createMesh(); used for frustum culling */
   boundingSphere: { center: Vec3; radius: number } | null = null;
 
   constructor(
@@ -35,7 +47,7 @@ export class Mesh extends Resource {
     if (!options.indices && options.vertexCount === undefined)
       throw new Error('Mesh: vertexCount required for non-indexed draws');
     this.vertexCount = options.vertexCount ?? 0;
-    this.mode = options.mode ?? this.gl.TRIANGLES;
+    this.mode = options.mode ?? DrawMode.TRIANGLES;
 
     const vao = this.gl.createVertexArray();
     if (!vao) throw new Error('Failed to create VAO');

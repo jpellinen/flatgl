@@ -4,7 +4,7 @@ import { RenderContext } from '@/renderer/RenderContext';
 import { Framebuffer } from '@/renderer/Framebuffer';
 import { Shader } from '@/renderer/Shader';
 import { Buffer } from '@/renderer/Buffer';
-import { Mesh } from '@/components/Mesh';
+import { Mesh, DrawMode } from '@/components/Mesh';
 import { Material } from '@/components/Material';
 import { Transform, getWorldMatrix } from '@/components/Transform';
 import { Mat4 } from '@/math/Mat4';
@@ -53,11 +53,17 @@ export class RenderSystem implements System {
     private light: LightState,
     private target?: Framebuffer,
     private aspect: number = 1,
-    private clearColor: [number, number, number, number] = [0.08, 0.08, 0.12, 1],
+    private clearColor: [number, number, number, number] = [
+      0.08, 0.08, 0.12, 1,
+    ],
   ) {}
 
-  setTarget(fb: Framebuffer): void { this.target = fb; }
-  setAspect(aspect: number): void { this.aspect = aspect; }
+  setTarget(fb: Framebuffer): void {
+    this.target = fb;
+  }
+  setAspect(aspect: number): void {
+    this.aspect = aspect;
+  }
 
   private initDebug(): void {
     const N = 32;
@@ -65,16 +71,28 @@ export class RenderSystem implements System {
     for (let i = 0; i < N; i++) {
       const a0 = (i / N) * Math.PI * 2;
       const a1 = ((i + 1) / N) * Math.PI * 2;
-      const [c0, s0, c1, s1] = [Math.cos(a0), Math.sin(a0), Math.cos(a1), Math.sin(a1)];
-      verts.push(c0, s0, 0,  c1, s1, 0);  // XY
-      verts.push(c0, 0,  s0, c1, 0,  s1); // XZ
-      verts.push(0,  c0, s0, 0,  c1, s1); // YZ
+      const [c0, s0, c1, s1] = [
+        Math.cos(a0),
+        Math.sin(a0),
+        Math.cos(a1),
+        Math.sin(a1),
+      ];
+      verts.push(c0, s0, 0, c1, s1, 0); // XY
+      verts.push(c0, 0, s0, c1, 0, s1); // XZ
+      verts.push(0, c0, s0, 0, c1, s1); // YZ
     }
-    this.debugShader = Shader.fromSource(this.context, debugVertSrc, debugFragSrc);
+    this.debugShader = Shader.fromSource(
+      this.context,
+      debugVertSrc,
+      debugFragSrc,
+    );
     const buf = new Buffer(this.context, new Float32Array(verts));
-    this.debugMesh = new Mesh(this.context, buf, [
-      { loc: 0, size: 3, stride: 12, offset: 0 },
-    ], { vertexCount: N * 2 * 3, mode: this.context.gl.LINES });
+    this.debugMesh = new Mesh(
+      this.context,
+      buf,
+      [{ loc: 0, size: 3, stride: 12, offset: 0 }],
+      { vertexCount: N * 2 * 3, mode: DrawMode.LINES },
+    );
   }
 
   private drawBoundingSpheres(view: Mat4, proj: Mat4): void {
@@ -91,17 +109,22 @@ export class RenderSystem implements System {
       const m = this.world.get(entity, Mesh)!;
       if (!m.boundingSphere) continue;
 
-      const wm = this.world.get(entity, Transform) ? getWorldMatrix(entity, this.world) : Mat4.identity();
-      const a = wm.array, lc = m.boundingSphere.center;
-      const wx = a[0]*lc.x + a[4]*lc.y + a[8]*lc.z  + a[12];
-      const wy = a[1]*lc.x + a[5]*lc.y + a[9]*lc.z  + a[13];
-      const wz = a[2]*lc.x + a[6]*lc.y + a[10]*lc.z + a[14];
-      const sx = Math.sqrt(a[0]*a[0] + a[1]*a[1] + a[2]*a[2]);
-      const sy = Math.sqrt(a[4]*a[4] + a[5]*a[5] + a[6]*a[6]);
-      const sz = Math.sqrt(a[8]*a[8] + a[9]*a[9] + a[10]*a[10]);
+      const wm = this.world.get(entity, Transform)
+        ? getWorldMatrix(entity, this.world)
+        : Mat4.identity();
+      const a = wm.array,
+        lc = m.boundingSphere.center;
+      const wx = a[0] * lc.x + a[4] * lc.y + a[8] * lc.z + a[12];
+      const wy = a[1] * lc.x + a[5] * lc.y + a[9] * lc.z + a[13];
+      const wz = a[2] * lc.x + a[6] * lc.y + a[10] * lc.z + a[14];
+      const sx = Math.sqrt(a[0] * a[0] + a[1] * a[1] + a[2] * a[2]);
+      const sy = Math.sqrt(a[4] * a[4] + a[5] * a[5] + a[6] * a[6]);
+      const sz = Math.sqrt(a[8] * a[8] + a[9] * a[9] + a[10] * a[10]);
       const r = m.boundingSphere.radius * Math.max(sx, sy, sz);
 
-      const model = Mat4.translation(new Vec3(wx, wy, wz)).multiply(Mat4.scaling(new Vec3(r, r, r)));
+      const model = Mat4.translation(new Vec3(wx, wy, wz)).multiply(
+        Mat4.scaling(new Vec3(r, r, r)),
+      );
       if (mvpLoc) gl.uniformMatrix4fv(mvpLoc, false, vp.multiply(model).array);
       mesh.draw();
     }
@@ -136,16 +159,18 @@ export class RenderSystem implements System {
     const groups = new Map<Material, number[]>();
     for (const entity of allEntities) {
       const mesh = this.world.get(entity, Mesh)!;
-      const worldMat = this.world.get(entity, Transform) ? getWorldMatrix(entity, this.world) : null;
+      const worldMat = this.world.get(entity, Transform)
+        ? getWorldMatrix(entity, this.world)
+        : null;
       if (mesh.boundingSphere !== null) {
         const b = worldMat ? worldMat.array : Mat4.identity().array;
         const lc = mesh.boundingSphere.center;
-        const cx = b[0]*lc.x + b[4]*lc.y + b[8]*lc.z  + b[12];
-        const cy = b[1]*lc.x + b[5]*lc.y + b[9]*lc.z  + b[13];
-        const cz = b[2]*lc.x + b[6]*lc.y + b[10]*lc.z + b[14];
-        const bsx = Math.sqrt(b[0]*b[0] + b[1]*b[1] + b[2]*b[2]);
-        const bsy = Math.sqrt(b[4]*b[4] + b[5]*b[5] + b[6]*b[6]);
-        const bsz = Math.sqrt(b[8]*b[8] + b[9]*b[9] + b[10]*b[10]);
+        const cx = b[0] * lc.x + b[4] * lc.y + b[8] * lc.z + b[12];
+        const cy = b[1] * lc.x + b[5] * lc.y + b[9] * lc.z + b[13];
+        const cz = b[2] * lc.x + b[6] * lc.y + b[10] * lc.z + b[14];
+        const bsx = Math.sqrt(b[0] * b[0] + b[1] * b[1] + b[2] * b[2]);
+        const bsy = Math.sqrt(b[4] * b[4] + b[5] * b[5] + b[6] * b[6]);
+        const bsz = Math.sqrt(b[8] * b[8] + b[9] * b[9] + b[10] * b[10]);
         const sr = mesh.boundingSphere.radius * Math.max(bsx, bsy, bsz);
         if (!inFrustum(planes, new Vec3(cx, cy, cz), sr)) continue;
       }
@@ -153,7 +178,10 @@ export class RenderSystem implements System {
       this.visible++;
       const mat = this.world.get(entity, Material)!;
       let group = groups.get(mat);
-      if (!group) { group = []; groups.set(mat, group); }
+      if (!group) {
+        group = [];
+        groups.set(mat, group);
+      }
       group.push(entity);
     }
     this.batches = groups.size;
@@ -172,10 +200,15 @@ export class RenderSystem implements System {
       material.setFloat('u_ambientIntensity', ambient);
       for (const entity of entities) {
         const mesh = this.world.get(entity, Mesh)!;
-        if (this.world.get(entity, Transform)) material.setMatrix4('u_model', getWorldMatrix(entity, this.world).array);
+        if (this.world.get(entity, Transform))
+          material.setMatrix4(
+            'u_model',
+            getWorldMatrix(entity, this.world).array,
+          );
         mesh.draw();
         this.drawCalls++;
-        this.triangles += mesh.indexCount > 0 ? mesh.indexCount / 3 : mesh.vertexCount / 3;
+        this.triangles +=
+          mesh.indexCount > 0 ? mesh.indexCount / 3 : mesh.vertexCount / 3;
       }
     }
 

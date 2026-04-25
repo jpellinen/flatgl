@@ -1,7 +1,7 @@
 import { RenderContext } from '../renderer/RenderContext';
 import { Shader } from '../renderer/Shader';
 import { Texture } from '../renderer/Texture';
-import { Buffer } from '../renderer/Buffer';
+import { Buffer, BufferUsage } from '../renderer/Buffer';
 import { Mat4 } from '../math/Mat4';
 import { Vec3 } from '../math/Vec3';
 
@@ -94,11 +94,11 @@ export class ParticleEmitter {
       -1, -1,   1, -1,  -1,  1,
        1, -1,   1,  1,  -1,  1,
     ]);
-    this.quadVbo = new Buffer(context, quadData, this.gl.STATIC_DRAW);
+    this.quadVbo = new Buffer(context, quadData, BufferUsage.STATIC_DRAW);
 
     // Instance buffer: preallocated, updated every frame
     const emptyInst = new Float32Array(this.maxParticles * INST_STRIDE);
-    this.instanceVbo = new Buffer(context, emptyInst, this.gl.DYNAMIC_DRAW);
+    this.instanceVbo = new Buffer(context, emptyInst, BufferUsage.DYNAMIC_DRAW);
 
     // VAO setup
     const vao = this.gl.createVertexArray();
