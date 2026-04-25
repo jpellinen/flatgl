@@ -35,10 +35,10 @@ const engine = Engine.create({
   postProcess: { fxaa: true },
 });
 
-const { world, input } = engine;
+const { world, input, assets } = engine;
 
-const mesh = engine.createMesh(ObjLoader.parse(objSource));
-const mat = engine.createMaterial({ color: new Vec3(0.9, 0.8, 0.6) });
+const mesh = assets.createMesh(ObjLoader.parse(objSource));
+const mat = assets.createMaterial({ color: new Vec3(0.9, 0.8, 0.6) });
 
 class PlayerMove implements ScriptBehaviour {
   onUpdate(entity: Entity, w: World, dt: number): void {
@@ -76,18 +76,22 @@ window.addEventListener('beforeunload', () => {
 Engine.create(options: EngineOptions): Engine
 
 engine.world: World               // ECS container
-engine.camera: TopDownCamera      // set camera.target to pan
+engine.camera: Camera             // set camera.target to pan
 engine.input: InputSnapshot       // keyboard + mouse state (read each frame)
+engine.assets: AssetFactory       // mesh, material, texture, emitter creation
 
 engine.start(): () => void        // starts RAF loop, returns stop function
-engine.createMesh(data: ObjData): Mesh
-engine.createMaterial(opts?: MaterialOptions): Material
-engine.createTexture(data: Uint8Array, w: number, h: number): Texture
-engine.loadTexture(url: string): Promise<Texture>
 engine.destroyEntity(entity: Entity): void  // fires onDestroy, then removes
-engine.showStats(element?: HTMLElement): void  // attach real-time stats overlay
-engine.showBoundingSpheres(enabled: boolean): void  // toggle debug circles
+engine.showStats(visible?: boolean): void   // toggle real-time stats overlay
+engine.showBoundingSpheres(visible?: boolean): void  // toggle debug circles
 engine.destroy(): void
+
+// AssetFactory (engine.assets)
+engine.assets.createMesh(data: ObjData): Mesh
+engine.assets.createMaterial(opts?: MaterialOptions): Material
+engine.assets.createTexture(data: Uint8Array, w: number, h: number): Texture
+engine.assets.loadTexture(url: string): Promise<Texture>
+engine.assets.createParticleEmitter(opts?: ParticleEmitterOptions): ParticleEmitter
 ```
 
 ### `EngineOptions`
@@ -106,9 +110,9 @@ engine.destroy(): void
   };
   light?: {
     direction?: Vec3;        // default (1,2,1).normalize()
-    color?: Vec3;            // default (1,1,1)
-    intensity?: number;      // default 0.8
-    ambient?: number;        // default 0.25
+    color?: Vec3;            // default (1, 0.88, 0.5)
+    intensity?: number;      // default 1.0
+    ambient?: number;        // default 0.45
   };
   postProcess?: {
     fxaa?: boolean;          // default true
@@ -159,9 +163,7 @@ Use `engine.destroyEntity(entity)` instead of `world.destroy()` to ensure `onDes
 Attach to any entity to emit GPU-instanced billboard particles. The emitter inherits the parent entity's `Transform`.
 
 ```typescript
-import { ParticleEmitter } from 'flatgl';
-
-const emitter = new ParticleEmitter(texture, {
+const emitter = engine.assets.createParticleEmitter({
   maxParticles: 500, // default 500
   rate: 20, // particles per second
   lifetime: 1.5, // seconds
@@ -232,7 +234,7 @@ Open `http://localhost:8080`. The demo scene includes a campfire with particle e
 ```
 src/
 ├── index.ts              # Public API
-├── engine/               # Engine, TopDownCamera, InputSystem
+├── engine/               # Engine, AssetFactory, ScreenPass, Camera, InputSystem
 ├── core/                 # ECS primitives (World, Entity, System)
 ├── components/           # Mesh, Material, Transform, Script, ParticleEmitter
 ├── systems/              # RenderSystem, ShadowSystem, ScriptSystem, ParticleSystem
