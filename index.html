@@ -14,9 +14,31 @@
         width: 100vw;
         height: 100vh;
       }
+      #loader {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #111;
+        z-index: 10;
+      }
+      #loader::after {
+        content: '';
+        width: 40px;
+        height: 40px;
+        border: 3px solid #333;
+        border-top-color: #aaa;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
     </style>
   </head>
   <body>
+    <div id="loader"></div>
     <canvas id="glcanvas"></canvas>
     <script src="dist/demo.js" defer></script>
   </body>
