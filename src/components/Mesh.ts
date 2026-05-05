@@ -32,7 +32,7 @@ export class Mesh extends Resource {
   readonly vertexCount: number;
   readonly indexCount: number;
   readonly mode: DrawMode;
-  private vao: WebGLVertexArrayObject;
+  protected vao: WebGLVertexArrayObject;
   private ibo: WebGLBuffer | null = null;
   /** @internal — set by engine.assets.createMesh(); used for frustum culling */
   boundingSphere: { center: Vec3; radius: number } | null = null;

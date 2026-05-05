@@ -257,7 +257,7 @@ async function init(): Promise<void> {
 }
 
 // Yield past a paint frame so the loader is visible before the engine blocks the thread.
-new Promise<void>(r => requestAnimationFrame(() => setTimeout(r, 0)))
+new Promise<void>((r) => requestAnimationFrame(() => setTimeout(r, 0)))
   .then(init)
   .catch(showError)
   .finally(() => document.getElementById('loader')?.remove());

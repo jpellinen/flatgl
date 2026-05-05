@@ -40,10 +40,8 @@ export class ShadowSystem implements System {
     this.target.bind();
     gl.clear(gl.DEPTH_BUFFER_BIT);
 
-    this.material.bind();
-    this.material.setMatrix4('u_lightSpaceMatrix', this.lightSpaceMatrix.array);
-
     const planes = this.lightSpaceMatrix.frustumPlanes();
+    let activeMaterial: Material | null = null;
 
     for (const entity of this.world.query(Mesh, Transform)) {
       const mesh = this.world.get(entity, Mesh)!;
@@ -51,6 +49,11 @@ export class ShadowSystem implements System {
       const center = new Vec3(worldMat.array[12], worldMat.array[13], worldMat.array[14]);
       if (mesh.boundingSphere !== null && !inFrustum(planes, center, mesh.boundingSphere.radius)) continue;
 
+      if (activeMaterial !== this.material) {
+        this.material.bind();
+        this.material.setMatrix4('u_lightSpaceMatrix', this.lightSpaceMatrix.array);
+        activeMaterial = this.material;
+      }
       this.material.setMatrix4('u_model', worldMat.array);
       mesh.draw();
       this.drawCalls++;

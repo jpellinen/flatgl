@@ -41,25 +41,30 @@ export class AssetFactory {
       { loc: 1, size: 3, stride: 32, offset: 12 },
       { loc: 2, size: 2, stride: 32, offset: 24 },
     ], { indices: data.indices });
+    mesh.boundingSphere = AssetFactory.computeBoundingSphere(data.vertices, 8);
+    return mesh;
+  }
 
-    const n = data.vertices.length / 8;
+  private static computeBoundingSphere(
+    vertices: Float32Array,
+    stride: number,
+  ): { center: Vec3; radius: number } {
+    const n = vertices.length / stride;
     let cx = 0, cy = 0, cz = 0;
     for (let i = 0; i < n; i++) {
-      cx += data.vertices[i * 8];
-      cy += data.vertices[i * 8 + 1];
-      cz += data.vertices[i * 8 + 2];
+      cx += vertices[i * stride];
+      cy += vertices[i * stride + 1];
+      cz += vertices[i * stride + 2];
     }
     cx /= n; cy /= n; cz /= n;
     let r = 0;
     for (let i = 0; i < n; i++) {
-      const dx = data.vertices[i * 8]     - cx;
-      const dy = data.vertices[i * 8 + 1] - cy;
-      const dz = data.vertices[i * 8 + 2] - cz;
+      const dx = vertices[i * stride]     - cx;
+      const dy = vertices[i * stride + 1] - cy;
+      const dz = vertices[i * stride + 2] - cz;
       r = Math.max(r, Math.sqrt(dx * dx + dy * dy + dz * dz));
     }
-    mesh.boundingSphere = { center: new Vec3(cx, cy, cz), radius: r };
-
-    return mesh;
+    return { center: new Vec3(cx, cy, cz), radius: r };
   }
 
   createMaterial(opts?: MaterialOptions): Material {

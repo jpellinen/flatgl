@@ -14,7 +14,7 @@ export class Buffer extends Resource {
 
   private usage: BufferUsage;
 
-  constructor(context: RenderContext, data: Float32Array, usage?: BufferUsage) {
+  constructor(context: RenderContext, data: ArrayBufferView, usage?: BufferUsage) {
     super(context);
     this.usage = usage ?? BufferUsage.STATIC_DRAW;
 
