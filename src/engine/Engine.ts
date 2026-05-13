@@ -1,6 +1,7 @@
 import { World } from '../core/World';
 import type { Entity } from '../core/Entity';
 import { ScriptSystem } from '../systems/ScriptSystem';
+import { AnimationSystem } from '../systems/AnimationSystem';
 import { ShadowSystem } from '../systems/ShadowSystem';
 import { RenderSystem, LightState } from '../systems/RenderSystem';
 import { ParticleSystem } from '../systems/ParticleSystem';
@@ -64,6 +65,7 @@ export class Engine {
   private screenPass: ScreenPass;
   private defaultTexture: Texture;
   private scriptSystem: ScriptSystem;
+  private animationSystem: AnimationSystem;
   private shadowSystem: ShadowSystem;
   private renderSystem: RenderSystem;
   private particleSystem: ParticleSystem;
@@ -90,30 +92,83 @@ export class Engine {
     // Light space matrix for shadow mapping
     const extent = shadowExtentForCamera(this.camera);
     const shadowFar = extent * 3;
-    const up = Math.abs(lightDir.y) > 0.99 ? new Vec3(0, 0, 1) : new Vec3(0, 1, 0);
+    const up =
+      Math.abs(lightDir.y) > 0.99 ? new Vec3(0, 0, 1) : new Vec3(0, 1, 0);
     const lightPos = lightDir.scale(shadowFar * 0.5);
     const lightView = Mat4.lookAt(lightPos, new Vec3(0, 0, 0), up);
-    const lightProj = Mat4.ortho(-extent, extent, -extent, extent, 0.1, shadowFar);
+    const lightProj = Mat4.ortho(
+      -extent,
+      extent,
+      -extent,
+      extent,
+      0.1,
+      shadowFar,
+    );
     const lightSpaceMat = lightProj.multiply(lightView);
 
     // GPU resources
-    this.shadowFb = Framebuffer.createDepthOnly(this.context, SHADOW_MAP_SIZE, SHADOW_MAP_SIZE);
+    this.shadowFb = Framebuffer.createDepthOnly(
+      this.context,
+      SHADOW_MAP_SIZE,
+      SHADOW_MAP_SIZE,
+    );
     this.sceneFb = Framebuffer.create(this.context, 1, 1);
-    this.defaultTexture = Texture.fromData(this.context, new Uint8Array([255, 255, 255, 255]), 1, 1);
+    this.defaultTexture = Texture.fromData(
+      this.context,
+      new Uint8Array([255, 255, 255, 255]),
+      1,
+      1,
+    );
 
     this.screenPass = new ScreenPass(this.context, options.postProcess ?? {});
-    this.assets = new AssetFactory(this.context, this.defaultTexture, this.shadowFb, lightSpaceMat);
+    this.assets = new AssetFactory(
+      this.context,
+      this.defaultTexture,
+      this.shadowFb,
+      lightSpaceMat,
+    );
 
     // ECS world + systems
     this.world = new World();
     this.cameraEntity = this.world.create();
     this.scriptSystem = new ScriptSystem(this.world);
 
-    const shadowShader = Shader.fromSource(this.context, shadowVertSrc, shadowFragSrc);
-    this.shadowSystem = new ShadowSystem(this.context, this.world, this.shadowFb, shadowShader, lightSpaceMat);
-    this.renderSystem = new RenderSystem(this.context, this.world, this.camera, this.lightState, this.sceneFb, 1);
+    this.animationSystem = new AnimationSystem(this.world);
 
-    this.particleSystem = new ParticleSystem(this.context, this.world, this.camera, this.sceneFb);
+    const shadowShader = Shader.fromSource(
+      this.context,
+      shadowVertSrc,
+      shadowFragSrc,
+    );
+    const skinnedShadowShader = Shader.fromSource(
+      this.context,
+      shadowVertSrc,
+      shadowFragSrc,
+      ['USE_SKINNING'],
+    );
+    this.shadowSystem = new ShadowSystem(
+      this.context,
+      this.world,
+      this.shadowFb,
+      shadowShader,
+      lightSpaceMat,
+      skinnedShadowShader,
+    );
+    this.renderSystem = new RenderSystem(
+      this.context,
+      this.world,
+      this.camera,
+      this.lightState,
+      this.sceneFb,
+      1,
+    );
+
+    this.particleSystem = new ParticleSystem(
+      this.context,
+      this.world,
+      this.camera,
+      this.sceneFb,
+    );
     this.inputSystem = new EngineInputSystem(options.canvas, this.camera);
   }
 
@@ -130,7 +185,11 @@ export class Engine {
   }
 
   showStats(visible = true): void {
-    if (!visible) { this.statsEl?.remove(); this.statsEl = null; return; }
+    if (!visible) {
+      this.statsEl?.remove();
+      this.statsEl = null;
+      return;
+    }
     if (this.statsEl) return;
     const el = document.createElement('div');
     el.style.cssText =
@@ -171,6 +230,7 @@ export class Engine {
       const aspect = w / Math.max(h, 1);
       this.inputSystem.update(aspect);
       this.scriptSystem.update(dt);
+      this.animationSystem.update(dt);
       this.particleSystem.update(dt);
       this.shadowSystem.render();
       this.renderSystem.render();

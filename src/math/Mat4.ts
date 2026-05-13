@@ -1,4 +1,5 @@
 import { Vec3 } from './Vec3';
+import { Quat } from './Quat';
 
 // Column-major Float32Array (matches WebGL convention).
 // Index layout: col * 4 + row
@@ -121,6 +122,38 @@ export class Mat4 {
     ]));
   }
 
+  static fromArray(a: ArrayLike<number>, offset = 0): Mat4 {
+    const f = new Float32Array(16);
+    for (let i = 0; i < 16; i++) f[i] = a[offset + i];
+    return new Mat4(f);
+  }
+
+  static fromTRS(t: Vec3, r: Quat, s: Vec3): Mat4 {
+    const { x, y, z, w } = r;
+    const x2 = x + x,
+      y2 = y + y,
+      z2 = z + z;
+    const xx = x * x2,
+      xy = x * y2,
+      xz = x * z2;
+    const yy = y * y2,
+      yz = y * z2,
+      zz = z * z2;
+    const wx = w * x2,
+      wy = w * y2,
+      wz = w * z2;
+    const sx = s.x,
+      sy = s.y,
+      sz = s.z;
+    // prettier-ignore
+    return new Mat4(new Float32Array([
+      (1 - (yy + zz)) * sx, (xy + wz) * sx,        (xz - wy) * sx,        0,
+      (xy - wz) * sy,       (1 - (xx + zz)) * sy,  (yz + wx) * sy,        0,
+      (xz + wy) * sz,       (yz - wx) * sz,        (1 - (xx + yy)) * sz,  0,
+      t.x,                  t.y,                   t.z,                   1,
+    ]));
+  }
+
   multiply(b: Mat4): Mat4 {
     const a = this.array;
     const bv = b.array;
@@ -142,37 +175,59 @@ export class Mat4 {
     const m = this.array;
     // Row i of the column-major matrix: (m[i], m[4+i], m[8+i], m[12+i])
     const plane = (
-      a: number, b: number, c: number, d: number,
+      a: number,
+      b: number,
+      c: number,
+      d: number,
     ): [number, number, number, number] => {
       const len = Math.sqrt(a * a + b * b + c * c);
       return [a / len, b / len, c / len, d / len];
     };
     return [
-      plane(m[0]+m[3],  m[4]+m[7],  m[8]+m[11],  m[12]+m[15]),  // left
-      plane(m[3]-m[0],  m[7]-m[4],  m[11]-m[8],  m[15]-m[12]),  // right
-      plane(m[1]+m[3],  m[5]+m[7],  m[9]+m[11],  m[13]+m[15]),  // bottom
-      plane(m[3]-m[1],  m[7]-m[5],  m[11]-m[9],  m[15]-m[13]),  // top
-      plane(m[2]+m[3],  m[6]+m[7],  m[10]+m[11], m[14]+m[15]),  // near
-      plane(m[3]-m[2],  m[7]-m[6],  m[11]-m[10], m[15]-m[14]),  // far
+      plane(m[0] + m[3], m[4] + m[7], m[8] + m[11], m[12] + m[15]), // left
+      plane(m[3] - m[0], m[7] - m[4], m[11] - m[8], m[15] - m[12]), // right
+      plane(m[1] + m[3], m[5] + m[7], m[9] + m[11], m[13] + m[15]), // bottom
+      plane(m[3] - m[1], m[7] - m[5], m[11] - m[9], m[15] - m[13]), // top
+      plane(m[2] + m[3], m[6] + m[7], m[10] + m[11], m[14] + m[15]), // near
+      plane(m[3] - m[2], m[7] - m[6], m[11] - m[10], m[15] - m[14]), // far
     ];
   }
 
   // General 4x4 matrix inverse. Returns null if matrix is singular.
   invert(): Mat4 | null {
     const a = this.array;
-    const a00 = a[0],  a01 = a[1],  a02 = a[2],  a03 = a[3];
-    const a10 = a[4],  a11 = a[5],  a12 = a[6],  a13 = a[7];
-    const a20 = a[8],  a21 = a[9],  a22 = a[10], a23 = a[11];
-    const a30 = a[12], a31 = a[13], a32 = a[14], a33 = a[15];
+    const a00 = a[0],
+      a01 = a[1],
+      a02 = a[2],
+      a03 = a[3];
+    const a10 = a[4],
+      a11 = a[5],
+      a12 = a[6],
+      a13 = a[7];
+    const a20 = a[8],
+      a21 = a[9],
+      a22 = a[10],
+      a23 = a[11];
+    const a30 = a[12],
+      a31 = a[13],
+      a32 = a[14],
+      a33 = a[15];
 
-    const b00 = a00*a11 - a01*a10, b01 = a00*a12 - a02*a10;
-    const b02 = a00*a13 - a03*a10, b03 = a01*a12 - a02*a11;
-    const b04 = a01*a13 - a03*a11, b05 = a02*a13 - a03*a12;
-    const b06 = a20*a31 - a21*a30, b07 = a20*a32 - a22*a30;
-    const b08 = a20*a33 - a23*a30, b09 = a21*a32 - a22*a31;
-    const b10 = a21*a33 - a23*a31, b11 = a22*a33 - a23*a32;
+    const b00 = a00 * a11 - a01 * a10,
+      b01 = a00 * a12 - a02 * a10;
+    const b02 = a00 * a13 - a03 * a10,
+      b03 = a01 * a12 - a02 * a11;
+    const b04 = a01 * a13 - a03 * a11,
+      b05 = a02 * a13 - a03 * a12;
+    const b06 = a20 * a31 - a21 * a30,
+      b07 = a20 * a32 - a22 * a30;
+    const b08 = a20 * a33 - a23 * a30,
+      b09 = a21 * a32 - a22 * a31;
+    const b10 = a21 * a33 - a23 * a31,
+      b11 = a22 * a33 - a23 * a32;
 
-    const det = b00*b11 - b01*b10 + b02*b09 + b03*b08 - b04*b07 + b05*b06;
+    const det =
+      b00 * b11 - b01 * b10 + b02 * b09 + b03 * b08 - b04 * b07 + b05 * b06;
     if (Math.abs(det) < 1e-10) return null;
     const id = 1 / det;
 

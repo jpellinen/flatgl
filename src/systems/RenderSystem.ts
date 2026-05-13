@@ -5,6 +5,8 @@ import { Framebuffer } from '@/renderer/Framebuffer';
 import { Shader } from '@/renderer/Shader';
 import { Buffer } from '@/renderer/Buffer';
 import { Mesh, DrawMode } from '@/components/Mesh';
+import { SkinnedMesh } from '@/components/SkinnedMesh';
+import { Skeleton } from '@/components/Skeleton';
 import { Material } from '@/components/Material';
 import { Transform, getWorldMatrix } from '@/components/Transform';
 import { Mat4 } from '@/math/Mat4';
@@ -105,8 +107,12 @@ export class RenderSystem implements System {
     shader.use();
     const mvpLoc = shader.uniformLocation('u_mvp');
 
-    for (const entity of this.world.query(Mesh)) {
-      const m = this.world.get(entity, Mesh)!;
+    for (const entity of [
+      ...this.world.query(Mesh),
+      ...this.world.query(SkinnedMesh),
+    ]) {
+      const m = (this.world.get(entity, SkinnedMesh) ??
+        this.world.get(entity, Mesh))!;
       if (!m.boundingSphere) continue;
 
       const wm = this.world.get(entity, Transform)
@@ -153,12 +159,16 @@ export class RenderSystem implements System {
     const proj = this.camera.projectionMatrix(this.aspect);
     const planes = proj.multiply(view).frustumPlanes();
 
-    const allEntities = this.world.query(Mesh, Material);
+    const allEntities = [
+      ...this.world.query(Mesh, Material),
+      ...this.world.query(SkinnedMesh, Material),
+    ];
     this.total = allEntities.length;
 
     const groups = new Map<Material, number[]>();
     for (const entity of allEntities) {
-      const mesh = this.world.get(entity, Mesh)!;
+      const mesh = (this.world.get(entity, SkinnedMesh) ??
+        this.world.get(entity, Mesh))!;
       const worldMat = this.world.get(entity, Transform)
         ? getWorldMatrix(entity, this.world)
         : null;
@@ -199,12 +209,16 @@ export class RenderSystem implements System {
       material.setFloat('u_lightIntensity', intensity);
       material.setFloat('u_ambientIntensity', ambient);
       for (const entity of entities) {
-        const mesh = this.world.get(entity, Mesh)!;
+        const mesh = (this.world.get(entity, SkinnedMesh) ??
+          this.world.get(entity, Mesh))!;
         if (this.world.get(entity, Transform))
           material.setMatrix4(
             'u_model',
             getWorldMatrix(entity, this.world).array,
           );
+        const skeleton = this.world.get(entity, Skeleton);
+        if (skeleton)
+          material.setMatrix4('u_jointMatrices[0]', skeleton.jointMatrices);
         mesh.draw();
         this.drawCalls++;
         this.triangles +=

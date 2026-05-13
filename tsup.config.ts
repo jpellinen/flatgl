@@ -10,6 +10,7 @@ export default defineConfig({
   loader: {
     '.glsl': 'text',
     '.obj': 'text',
+    '.glb': 'binary',
   },
   esbuildOptions(options) {
     options.alias = {

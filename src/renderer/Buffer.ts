@@ -2,19 +2,23 @@ import { RenderContext } from './RenderContext';
 import { Resource } from './Resource';
 
 export const BufferUsage = {
-  STATIC_DRAW:  WebGL2RenderingContext.STATIC_DRAW,
+  STATIC_DRAW: WebGL2RenderingContext.STATIC_DRAW,
   DYNAMIC_DRAW: WebGL2RenderingContext.DYNAMIC_DRAW,
-  STREAM_DRAW:  WebGL2RenderingContext.STREAM_DRAW,
+  STREAM_DRAW: WebGL2RenderingContext.STREAM_DRAW,
 } as const;
 
-export type BufferUsage = typeof BufferUsage[keyof typeof BufferUsage];
+export type BufferUsage = (typeof BufferUsage)[keyof typeof BufferUsage];
 
 export class Buffer extends Resource {
   private handle: WebGLBuffer;
 
   private usage: BufferUsage;
 
-  constructor(context: RenderContext, data: ArrayBufferView, usage?: BufferUsage) {
+  constructor(
+    context: RenderContext,
+    data: ArrayBufferView,
+    usage?: BufferUsage,
+  ) {
     super(context);
     this.usage = usage ?? BufferUsage.STATIC_DRAW;
 
@@ -39,6 +43,17 @@ export class Buffer extends Resource {
       stride,
       offset,
     );
+  }
+
+  setIntAttrib(
+    loc: number,
+    size: number,
+    type: number,
+    stride: number,
+    offset: number,
+  ): void {
+    this.gl.enableVertexAttribArray(loc);
+    this.gl.vertexAttribIPointer(loc, size, type, stride, offset);
   }
 
   setInstanceAttrib(

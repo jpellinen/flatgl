@@ -1,4 +1,11 @@
-import { Engine, Script, Transform, Vec3, ObjLoader } from '../src/index';
+import {
+  Engine,
+  Script,
+  Transform,
+  Vec3,
+  ObjLoader,
+  GltfLoader,
+} from '../src/index';
 import type { ScriptBehaviour, Entity } from '../src/index';
 import type { World } from '../src/core/World';
 
@@ -13,6 +20,7 @@ import grassPng from './assets/grass.png';
 import campfireSrc from './assets/campfire.obj';
 import campfirePng from './assets/campfire.png';
 import firePng from './assets/fire.png';
+import testanimSrc from './assets/testanim.glb';
 
 function showError(err: unknown): void {
   const div = document.createElement('div');
@@ -185,6 +193,27 @@ async function init(): Promise<void> {
       new Transform(new Vec3(x, 0, z), new Vec3(0, ry, 0), new Vec3(s, s, s)),
     );
   }
+
+  // Test animation
+  /*const { mesh, skeleton, animator } = await engine.assets.createGltf(
+    GltfLoader.fromBuffer(testanimSrc),
+  );
+  const material = engine.assets.createSkinnedMaterial({
+    color: new Vec3(1, 1, 1),
+  });
+  const entity = engine.world.create();
+  engine.world.add(entity, mesh);
+  engine.world.add(entity, skeleton);
+  engine.world.add(entity, animator);
+  engine.world.add(entity, material);
+  engine.world.add(
+    entity,
+    new Transform(
+      new Vec3(-1.5, 0, 0),
+      new Vec3(0, 0, 0),
+      new Vec3(0.5, 0.5, 0.5),
+    ),
+  );*/
 
   const fireEmitter = assets.createParticleEmitter({
     rate: 10,

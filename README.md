@@ -18,7 +18,9 @@ An opinionated WebGL 2.0 engine for games and game-like apps. Zero runtime depen
 - **Script behaviours** — `onStart` / `onUpdate` / `onDestroy` lifecycle per entity
 - **Particle system** — GPU-instanced billboard particles with per-particle physics, size/color lerp, and additive or alpha blending
 - **Transform hierarchy** — parent entity references; child transforms inherit parent TRS
+- **Skeletal animation** — GPU skinning via glTF 2.0 (.glb); up to 64 bones, linear keyframe interpolation and quaternion slerp
 - **OBJ loader** — positions, normals, and UVs with flat-normal fallback
+- **glTF 2.0 loader** — skinned meshes and animation clips from Blender GLB exports
 - **PNG textures** — load via URL or raw `Uint8Array`
 - **Stats overlay** — real-time FPS, draw calls, culling stats, triangle count, particle count
 - **Bounding sphere debug** — visualise per-entity bounding spheres as line circles
@@ -68,6 +70,53 @@ window.addEventListener('beforeunload', () => {
 });
 ```
 
+## Skeletal Animation
+
+Export a rigged mesh from Blender as **glTF 2.0 Binary (.glb)** with *Include → Armature* and *Animation → Include → Animations* checked.
+
+```typescript
+import { Engine, GltfLoader, Transform, Vec3 } from 'flatgl';
+import characterSrc from './assets/character.glb'; // bundled binary
+
+const engine = Engine.create({ canvas });
+const { world, assets } = engine;
+
+// Parse and upload to GPU — synchronous, no fetch
+const { mesh, skeleton, animator } = assets.createGltf(
+  GltfLoader.fromBuffer(characterSrc),
+);
+const material = assets.createSkinnedMaterial({ color: new Vec3(1, 1, 1) });
+
+const entity = world.create();
+world.add(entity, mesh);
+world.add(entity, skeleton);
+world.add(entity, animator);
+world.add(entity, material);
+world.add(entity, new Transform());
+
+// Switch animation clips at any time
+animator.play('Run');
+animator.speed = 1.5;
+animator.loop = true;
+
+engine.start();
+```
+
+For large assets that should not be bundled, use the async URL variant instead:
+
+```typescript
+const { mesh, skeleton, animator } = await assets.loadGltf('/assets/character.glb');
+```
+
+### Blender export checklist
+
+- **Format:** glTF 2.0 Binary (`.glb`)
+- **Include:** ☑ Armature
+- **Animation → Include:** ☑ Animations
+- Bone count ≤ 64
+
+---
+
 ## Public API
 
 ### `Engine`
@@ -92,6 +141,11 @@ engine.assets.createMaterial(opts?: MaterialOptions): Material
 engine.assets.createTexture(data: Uint8Array, w: number, h: number): Texture
 engine.assets.loadTexture(url: string): Promise<Texture>
 engine.assets.createParticleEmitter(opts?: ParticleEmitterOptions): ParticleEmitter
+
+// Skeletal animation
+engine.assets.createGltf(doc: GltfDocument): { mesh, skeleton, animator }  // synchronous
+engine.assets.loadGltf(url: string): Promise<{ mesh, skeleton, animator }> // fetch-based
+engine.assets.createSkinnedMaterial(opts?: MaterialOptions): Material
 ```
 
 ### `EngineOptions`
@@ -236,15 +290,15 @@ src/
 ├── index.ts              # Public API
 ├── engine/               # Engine, AssetFactory, ScreenPass, Camera, InputSystem
 ├── core/                 # ECS primitives (World, Entity, System)
-├── components/           # Mesh, Material, Transform, Script, ParticleEmitter
-├── systems/              # RenderSystem, ShadowSystem, ScriptSystem, ParticleSystem
+├── components/           # Mesh, SkinnedMesh, Material, Transform, Script, Skeleton, Animator, ParticleEmitter
+├── systems/              # RenderSystem, ShadowSystem, AnimationSystem, ScriptSystem, ParticleSystem
 ├── renderer/             # WebGL2 wrappers (Shader, Buffer, Texture, Framebuffer)
-├── math/                 # Vec3, Mat4
-├── loaders/              # OBJ parser
-└── shaders/              # GLSL 3.00 ES (scene, shadow, screen/FXAA, particle, debug)
+├── math/                 # Vec3, Mat4, Quat
+├── loaders/              # ObjLoader, GltfLoader
+└── shaders/              # GLSL 3.00 ES (scene, shadow, screen/FXAA, particle, debug) — USE_SKINNING define variant
 examples/
-├── demo.ts               # Scene with campfire, rocks, and trees
-└── assets/               # campfire, rock, tree — .obj + .png each; fire.png particle texture
+├── demo.ts               # Scene with campfire, rocks, trees, and animated character
+└── assets/               # campfire, rock, tree — .obj + .png each; fire.png; testanim.glb
 ```
 
 ## Rendering Pipeline
@@ -257,6 +311,6 @@ examples/
 ## Tech Stack
 
 - **Language:** TypeScript 6 (strict mode, ES2020 target)
-- **Build:** tsup (library) + esbuild (demo), with custom loaders for `.glsl`, `.obj`, and `.png`
+- **Build:** tsup (library) + esbuild (demo), with custom loaders for `.glsl`, `.obj`, `.png`, and `.glb`
 - **Rendering:** WebGL 2.0 — no external graphics libraries
 - **Linting:** ESLint 9 + typescript-eslint + Prettier

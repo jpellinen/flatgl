@@ -11,10 +11,20 @@ export class Shader extends Resource {
     this.program = program;
   }
 
-  static fromSource(context: RenderContext, vsSource: string, fsSource: string): Shader {
+  static fromSource(
+    context: RenderContext,
+    vsSource: string,
+    fsSource: string,
+    defines: string[] = [],
+  ): Shader {
+    const inject = (src: string) => {
+      if (defines.length === 0) return src;
+      const defs = defines.map((d) => `#define ${d}`).join('\n');
+      return src.replace(/^(#version[^\n]*\n)/, `$1${defs}\n`);
+    };
     const gl = context.gl;
-    const vs = compileShader(gl, gl.VERTEX_SHADER, vsSource);
-    const fs = compileShader(gl, gl.FRAGMENT_SHADER, fsSource);
+    const vs = compileShader(gl, gl.VERTEX_SHADER, inject(vsSource));
+    const fs = compileShader(gl, gl.FRAGMENT_SHADER, inject(fsSource));
     const program = gl.createProgram();
     if (!program) throw new Error('Failed to create program');
     gl.attachShader(program, vs);
@@ -27,10 +37,20 @@ export class Shader extends Resource {
     return new Shader(context, program);
   }
 
-  static async load(context: RenderContext, vsUrl: string, fsUrl: string): Promise<Shader> {
+  static async load(
+    context: RenderContext,
+    vsUrl: string,
+    fsUrl: string,
+  ): Promise<Shader> {
     const [vsSource, fsSource] = await Promise.all([
-      fetch(vsUrl).then(r => { if (!r.ok) throw new Error(`Failed to load shader: ${vsUrl}`); return r.text(); }),
-      fetch(fsUrl).then(r => { if (!r.ok) throw new Error(`Failed to load shader: ${fsUrl}`); return r.text(); }),
+      fetch(vsUrl).then((r) => {
+        if (!r.ok) throw new Error(`Failed to load shader: ${vsUrl}`);
+        return r.text();
+      }),
+      fetch(fsUrl).then((r) => {
+        if (!r.ok) throw new Error(`Failed to load shader: ${fsUrl}`);
+        return r.text();
+      }),
     ]);
     return Shader.fromSource(context, vsSource, fsSource);
   }
@@ -47,7 +67,10 @@ export class Shader extends Resource {
 
   uniformLocation(name: string): WebGLUniformLocation | null {
     if (!this.uniformCache.has(name))
-      this.uniformCache.set(name, this.gl.getUniformLocation(this.program, name));
+      this.uniformCache.set(
+        name,
+        this.gl.getUniformLocation(this.program, name),
+      );
     return this.uniformCache.get(name) ?? null;
   }
 

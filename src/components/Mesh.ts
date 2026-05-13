@@ -4,25 +4,25 @@ import { Buffer } from '@/renderer/Buffer';
 import { Vec3 } from '@/math/Vec3';
 
 export const DrawMode = {
-  TRIANGLES:      WebGL2RenderingContext.TRIANGLES,
+  TRIANGLES: WebGL2RenderingContext.TRIANGLES,
   TRIANGLE_STRIP: WebGL2RenderingContext.TRIANGLE_STRIP,
-  TRIANGLE_FAN:   WebGL2RenderingContext.TRIANGLE_FAN,
-  LINES:          WebGL2RenderingContext.LINES,
-  LINE_STRIP:     WebGL2RenderingContext.LINE_STRIP,
-  LINE_LOOP:      WebGL2RenderingContext.LINE_LOOP,
-  POINTS:         WebGL2RenderingContext.POINTS,
+  TRIANGLE_FAN: WebGL2RenderingContext.TRIANGLE_FAN,
+  LINES: WebGL2RenderingContext.LINES,
+  LINE_STRIP: WebGL2RenderingContext.LINE_STRIP,
+  LINE_LOOP: WebGL2RenderingContext.LINE_LOOP,
+  POINTS: WebGL2RenderingContext.POINTS,
 } as const;
 
-export type DrawMode = typeof DrawMode[keyof typeof DrawMode];
+export type DrawMode = (typeof DrawMode)[keyof typeof DrawMode];
 
-interface AttribDescriptor {
+export interface AttribDescriptor {
   loc: number;
   size: number;
   stride: number;
   offset: number;
 }
 
-interface MeshOptions {
+export interface MeshOptions {
   indices?: Uint16Array;
   vertexCount?: number;
   mode?: DrawMode;
@@ -65,7 +65,11 @@ export class Mesh extends Resource {
       if (!ibo) throw new Error('Failed to create index buffer');
       this.ibo = ibo;
       this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, this.ibo);
-      this.gl.bufferData(this.gl.ELEMENT_ARRAY_BUFFER, options.indices, this.gl.STATIC_DRAW);
+      this.gl.bufferData(
+        this.gl.ELEMENT_ARRAY_BUFFER,
+        options.indices,
+        this.gl.STATIC_DRAW,
+      );
     } else {
       this.indexCount = 0;
     }
@@ -80,7 +84,12 @@ export class Mesh extends Resource {
   draw(): void {
     this.bind();
     if (this.indexCount > 0) {
-      this.gl.drawElements(this.mode, this.indexCount, this.gl.UNSIGNED_SHORT, 0);
+      this.gl.drawElements(
+        this.mode,
+        this.indexCount,
+        this.gl.UNSIGNED_SHORT,
+        0,
+      );
     } else {
       this.gl.drawArrays(this.mode, 0, this.vertexCount);
     }
