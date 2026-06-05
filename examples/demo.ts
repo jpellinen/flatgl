@@ -4,7 +4,7 @@ import {
   Transform,
   Vec3,
   ObjLoader,
-  GltfLoader,
+  //GltfLoader,
 } from '../src/index';
 import type { ScriptBehaviour, Entity } from '../src/index';
 import type { World } from '../src/core/World';
@@ -20,7 +20,7 @@ import grassPng from './assets/grass.png';
 import campfireSrc from './assets/campfire.obj';
 import campfirePng from './assets/campfire.png';
 import firePng from './assets/fire.png';
-import testanimSrc from './assets/testanim.glb';
+//import testanimSrc from './assets/testanim.glb';
 
 function showError(err: unknown): void {
   const div = document.createElement('div');
