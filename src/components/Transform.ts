@@ -11,10 +11,6 @@ export class Transform {
     public parent?: Entity,
   ) {}
 
-  static identity(): Transform {
-    return new Transform();
-  }
-
   // Returns T * Rx * Ry * Rz * S (TRS order), local space
   matrix(): Mat4 {
     return Mat4.translation(this.position)

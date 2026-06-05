@@ -208,11 +208,7 @@ async function init(): Promise<void> {
   engine.world.add(entity, material);
   engine.world.add(
     entity,
-    new Transform(
-      new Vec3(-1.5, 0, 0),
-      new Vec3(0, 0, 0),
-      new Vec3(0.5, 0.5, 0.5),
-    ),
+    new Transform(new Vec3(-1.5, 0, 0), new Vec3(0, 0, 0), new Vec3(0.5, 0.5, 0.5)),
   );*/
 
   const fireEmitter = assets.createParticleEmitter({
@@ -230,7 +226,12 @@ async function init(): Promise<void> {
   const fireOrigin = world.create();
   world.add(
     fireOrigin,
-    new Transform(new Vec3(0, 0.2, 0), undefined, undefined, campfire),
+    new Transform(
+      new Vec3(0, 0.2, 0),
+      new Vec3(0, 0, 0),
+      new Vec3(1, 1, 1),
+      campfire,
+    ),
   );
   world.add(fireOrigin, fireEmitter);
 

@@ -26,7 +26,7 @@ class InputSnapshotImpl implements InputSnapshot {
   }
 }
 
-export class EngineInputSystem {
+export class InputManager {
   private _snapshot = new InputSnapshotImpl();
   private heldKeys = new Set<string>();
   private mouseIsDown = false;
@@ -41,9 +41,16 @@ export class EngineInputSystem {
   private onMouseUp: (e: MouseEvent) => void;
   private onWheel: (e: WheelEvent) => void;
 
-  constructor(private canvas: HTMLCanvasElement, private camera: Camera) {
-    this.onKeyDown = (e: KeyboardEvent) => { this.heldKeys.add(e.key); };
-    this.onKeyUp = (e: KeyboardEvent) => { this.heldKeys.delete(e.key); };
+  constructor(
+    private canvas: HTMLCanvasElement,
+    private camera: Camera,
+  ) {
+    this.onKeyDown = (e: KeyboardEvent) => {
+      this.heldKeys.add(e.key);
+    };
+    this.onKeyUp = (e: KeyboardEvent) => {
+      this.heldKeys.delete(e.key);
+    };
     this.onMouseMove = (e: MouseEvent) => {
       const rect = canvas.getBoundingClientRect();
       this.rawMousePixel = {
@@ -51,8 +58,12 @@ export class EngineInputSystem {
         y: (e.clientY - rect.top) * (canvas.height / rect.height),
       };
     };
-    this.onMouseDown = (e: MouseEvent) => { if (e.button === 0) this.mouseIsDown = true; };
-    this.onMouseUp   = (e: MouseEvent) => { if (e.button === 0) this.mouseIsDown = false; };
+    this.onMouseDown = (e: MouseEvent) => {
+      if (e.button === 0) this.mouseIsDown = true;
+    };
+    this.onMouseUp = (e: MouseEvent) => {
+      if (e.button === 0) this.mouseIsDown = false;
+    };
     this.onWheel = (e: WheelEvent) => {
       e.preventDefault();
       this.accWheelDelta += e.deltaY;
@@ -77,7 +88,11 @@ export class EngineInputSystem {
     this.mouseWasDown = this.mouseIsDown;
     snap.wheelDelta = this.accWheelDelta;
     this.accWheelDelta = 0;
-    snap.mouseWorld = this.unprojectToGround(this.rawMousePixel.x, this.rawMousePixel.y, aspect);
+    snap.mouseWorld = this.unprojectToGround(
+      this.rawMousePixel.x,
+      this.rawMousePixel.y,
+      aspect,
+    );
   }
 
   get snapshot(): InputSnapshot {
@@ -89,12 +104,14 @@ export class EngineInputSystem {
     const ndcX = (px / width) * 2 - 1;
     const ndcY = 1 - (py / height) * 2;
 
-    const vp = this.camera.projectionMatrix(aspect).multiply(this.camera.viewMatrix());
+    const vp = this.camera
+      .projectionMatrix(aspect)
+      .multiply(this.camera.viewMatrix());
     const invVP = vp.invert();
     if (!invVP) return new Vec3(0, 0, 0);
 
     const nearPt = transformH(invVP, ndcX, ndcY, -1);
-    const farPt  = transformH(invVP, ndcX, ndcY,  1);
+    const farPt = transformH(invVP, ndcX, ndcY, 1);
 
     const dy = farPt.y - nearPt.y;
     if (Math.abs(dy) < 1e-6) return new Vec3(nearPt.x, 0, nearPt.z);
@@ -116,11 +133,16 @@ export class EngineInputSystem {
   }
 }
 
-function transformH(m: import('../math/Mat4').Mat4, x: number, y: number, z: number): Vec3 {
+function transformH(
+  m: import('../math/Mat4').Mat4,
+  x: number,
+  y: number,
+  z: number,
+): Vec3 {
   const a = m.array;
-  const rx = a[0]*x + a[4]*y + a[8]*z + a[12];
-  const ry = a[1]*x + a[5]*y + a[9]*z + a[13];
-  const rz = a[2]*x + a[6]*y + a[10]*z + a[14];
-  const rw = a[3]*x + a[7]*y + a[11]*z + a[15];
+  const rx = a[0] * x + a[4] * y + a[8] * z + a[12];
+  const ry = a[1] * x + a[5] * y + a[9] * z + a[13];
+  const rz = a[2] * x + a[6] * y + a[10] * z + a[14];
+  const rw = a[3] * x + a[7] * y + a[11] * z + a[15];
   return new Vec3(rx / rw, ry / rw, rz / rw);
 }

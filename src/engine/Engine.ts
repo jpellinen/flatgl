@@ -1,4 +1,5 @@
 import { World } from '../core/World';
+import type { System } from '../core/System';
 import type { Entity } from '../core/Entity';
 import { ScriptSystem } from '../systems/ScriptSystem';
 import { AnimationSystem } from '../systems/AnimationSystem';
@@ -14,8 +15,8 @@ import type { PostProcessOptions } from './ScreenPass';
 import { AssetFactory } from './AssetFactory';
 import { Camera } from './Camera';
 import type { CameraOptions } from './Camera';
-import { EngineInputSystem } from './InputSystem';
-import type { InputSnapshot } from './InputSystem';
+import { InputManager } from './InputManager';
+import type { InputSnapshot } from './InputManager';
 import type { ParticleEmitterOptions } from '../components/ParticleEmitter';
 import { Mat4 } from '../math/Mat4';
 import { Vec3 } from '../math/Vec3';
@@ -69,7 +70,8 @@ export class Engine {
   private shadowSystem: ShadowSystem;
   private renderSystem: RenderSystem;
   private particleSystem: ParticleSystem;
-  private inputSystem: EngineInputSystem;
+  private inputSystem: InputManager;
+  private systems: System[] = [];
   private statsEl: HTMLDivElement | null = null;
   private smoothFps = 0;
 
@@ -169,7 +171,15 @@ export class Engine {
       this.camera,
       this.sceneFb,
     );
-    this.inputSystem = new EngineInputSystem(options.canvas, this.camera);
+    this.inputSystem = new InputManager(options.canvas, this.camera);
+
+    this.systems = [
+      this.scriptSystem,
+      this.animationSystem,
+      this.shadowSystem,
+      this.renderSystem,
+      this.particleSystem,
+    ];
   }
 
   static create(options: EngineOptions): Engine {
@@ -229,12 +239,8 @@ export class Engine {
 
       const aspect = w / Math.max(h, 1);
       this.inputSystem.update(aspect);
-      this.scriptSystem.update(dt);
-      this.animationSystem.update(dt);
-      this.particleSystem.update(dt);
-      this.shadowSystem.render();
-      this.renderSystem.render();
-      this.particleSystem.render();
+      for (const s of this.systems) s.update?.(dt);
+      for (const s of this.systems) s.render?.();
       this.screenPass.render(this.sceneFb, w, h);
 
       if (this.statsEl && dt > 0) {
@@ -263,8 +269,7 @@ export class Engine {
   destroy(): void {
     this.inputSystem.destroy();
     this.scriptSystem.destroyAll();
-    this.shadowSystem.destroy();
-    this.particleSystem.destroy();
+    for (const s of this.systems) s.destroy?.();
     this.world.destroyAll();
     this.shadowFb.destroy();
     this.sceneFb.destroy();
