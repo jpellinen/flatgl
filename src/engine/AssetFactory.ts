@@ -220,6 +220,6 @@ export class AssetFactory {
   }
 
   createParticleEmitter(opts?: ParticleEmitterOptions): ParticleEmitter {
-    return new ParticleEmitter(this.context, this.defaultTexture, opts);
+    return new ParticleEmitter(opts);
   }
 }

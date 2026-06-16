@@ -170,6 +170,7 @@ export class Engine {
       this.world,
       this.camera,
       this.sceneFb,
+      this.defaultTexture,
     );
     this.inputSystem = new InputManager(options.canvas, this.camera);
 
