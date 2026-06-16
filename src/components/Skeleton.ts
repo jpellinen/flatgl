@@ -1,3 +1,4 @@
+import { Mat4 } from '@/math/Mat4';
 const IDENTITY_16 = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1] as const;
 
 export class Skeleton {
@@ -10,6 +11,7 @@ export class Skeleton {
   readonly localScales: Float32Array;
 
   readonly jointMatrices: Float32Array;
+  readonly worldMats: Mat4[];
 
   constructor(parentIndices: Int16Array, inverseBindMatrices: Float32Array) {
     this.jointCount = parentIndices.length;
@@ -39,5 +41,7 @@ export class Skeleton {
         this.jointMatrices[i * 16 + j] = IDENTITY_16[j];
       }
     }
+
+    this.worldMats = new Array(this.jointCount);
   }
 }

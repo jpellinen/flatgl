@@ -122,10 +122,7 @@ export class AnimationSystem implements System {
       }
 
       // Forward pass — joints are in topological order (parent index < child index).
-      // worldMats is allocated per update; acceptable for a small number of animated
-      // entities. If this shows up in profiling, replace with a Float32Array(64*16)
-      // scratch buffer on the system and multiply in-place.
-      const worldMats: Mat4[] = new Array(skeleton.jointCount);
+      const worldMats = skeleton.worldMats;
       for (let j = 0; j < skeleton.jointCount; j++) {
         const local = Mat4.fromTRS(
           new Vec3(

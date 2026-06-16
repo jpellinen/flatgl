@@ -11,6 +11,7 @@ import { Material } from '@/components/Material';
 import { Transform, getWorldMatrix } from '@/components/Transform';
 import { Mat4 } from '@/math/Mat4';
 import { Vec3 } from '@/math/Vec3';
+import { inFrustum } from '@/math/Frustum';
 
 import debugVertSrc from '@/shaders/debug.vert.glsl';
 import debugFragSrc from '@/shaders/debug.frag.glsl';
@@ -26,15 +27,6 @@ export interface LightState {
   color: Vec3;
   intensity: number;
   ambient: number;
-}
-
-type Plane = [number, number, number, number];
-
-function inFrustum(planes: Plane[], center: Vec3, radius: number): boolean {
-  for (const [a, b, c, d] of planes) {
-    if (a * center.x + b * center.y + c * center.z + d < -radius) return false;
-  }
-  return true;
 }
 
 export class RenderSystem implements System {
