@@ -1,3 +1,5 @@
+import { Component } from '@/core/Component';
+
 export type AnimationPath = 'translation' | 'rotation' | 'scale';
 
 export interface AnimationTrack {
@@ -12,8 +14,6 @@ export interface AnimationClip {
   duration: number;
   tracks: AnimationTrack[];
 }
-
-import { Component } from '@/core/Component';
 
 export class Animator extends Component {
   readonly clips: AnimationClip[];

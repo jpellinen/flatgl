@@ -1,5 +1,6 @@
 import { Component } from '@/core/Component';
 import { Mat4 } from '@/math/Mat4';
+
 const IDENTITY_16 = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1] as const;
 
 export class Skeleton extends Component {
