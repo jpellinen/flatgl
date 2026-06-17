@@ -103,6 +103,20 @@ export class ParticleSystem implements System {
 
   update(dt: number): void {
     const entities = this.world.query(ParticleEmitter, Transform);
+
+    // Runs before the early return so GPU objects are freed the same tick the emitter is removed.
+    if (this.gpuStates.size > 0) {
+      const live = new Set(
+        entities.map((e) => this.world.get(e, ParticleEmitter)!),
+      );
+      for (const [emitter, state] of this.gpuStates) {
+        if (!live.has(emitter)) {
+          this.destroyGpu(state);
+          this.gpuStates.delete(emitter);
+        }
+      }
+    }
+
     if (entities.length === 0) return;
 
     const { gl } = this.context;
@@ -110,23 +124,12 @@ export class ParticleSystem implements System {
     const aspect = gl.drawingBufferWidth / Math.max(gl.drawingBufferHeight, 1);
     this.proj = this.camera.projectionMatrix(aspect);
 
-    // Clean up GPU state for emitters no longer in the world
-    const live = new Set(
-      entities.map((e) => this.world.get(e, ParticleEmitter)!),
-    );
-    for (const [emitter, state] of this.gpuStates) {
-      if (!live.has(emitter)) {
-        this.destroyGpu(state);
-        this.gpuStates.delete(emitter);
-      }
-    }
-
     let particles = 0;
     for (const entity of entities) {
       const emitter = this.world.get(entity, ParticleEmitter)!;
       const m = getWorldMatrix(entity, this.world).array;
       emitter.simulate(dt, new Vec3(m[12], m[13], m[14]));
-      particles += emitter.particleCount;
+      particles += emitter.liveCount;
     }
     this.particles = particles;
   }
@@ -140,6 +143,14 @@ export class ParticleSystem implements System {
     this.target.bind();
     gl.enable(gl.BLEND);
     gl.depthMask(false);
+
+    this.shader.use();
+    const viewLoc = this.shader.uniformLocation('u_view');
+    const projLoc = this.shader.uniformLocation('u_projection');
+    const texLoc = this.shader.uniformLocation('u_texture');
+    if (viewLoc) gl.uniformMatrix4fv(viewLoc, false, this.view.array);
+    if (projLoc) gl.uniformMatrix4fv(projLoc, false, this.proj.array);
+    if (texLoc) gl.uniform1i(texLoc, 0);
 
     for (const entity of entities) {
       const emitter = this.world.get(entity, ParticleEmitter)!;
@@ -185,14 +196,6 @@ export class ParticleSystem implements System {
         0,
         instanceData.subarray(0, emitter.liveCount * INST_STRIDE),
       );
-
-      this.shader.use();
-      const viewLoc = this.shader.uniformLocation('u_view');
-      const projLoc = this.shader.uniformLocation('u_projection');
-      const texLoc = this.shader.uniformLocation('u_texture');
-      if (viewLoc) gl.uniformMatrix4fv(viewLoc, false, this.view.array);
-      if (projLoc) gl.uniformMatrix4fv(projLoc, false, this.proj.array);
-      if (texLoc) gl.uniform1i(texLoc, 0);
 
       gpu.texture.bind(0);
       gl.bindVertexArray(gpu.vao);

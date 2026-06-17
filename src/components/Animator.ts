@@ -13,7 +13,9 @@ export interface AnimationClip {
   tracks: AnimationTrack[];
 }
 
-export class Animator {
+import { Component } from '@/core/Component';
+
+export class Animator extends Component {
   readonly clips: AnimationClip[];
   activeClip: AnimationClip | null = null;
   time = 0;
@@ -21,6 +23,7 @@ export class Animator {
   loop = true;
 
   constructor(...clips: AnimationClip[]) {
+    super();
     this.clips = clips;
   }
 

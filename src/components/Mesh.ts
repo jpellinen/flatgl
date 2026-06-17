@@ -1,5 +1,5 @@
+import { Component } from '@/core/Component';
 import { RenderContext } from '@/renderer/RenderContext';
-import { Resource } from '@/renderer/Resource';
 import { Buffer } from '@/renderer/Buffer';
 import { Vec3 } from '@/math/Vec3';
 
@@ -28,7 +28,8 @@ export interface MeshOptions {
   mode?: DrawMode;
 }
 
-export class Mesh extends Resource {
+export class Mesh extends Component {
+  protected readonly gl: WebGL2RenderingContext;
   readonly vertexCount: number;
   readonly indexCount: number;
   readonly mode: DrawMode;
@@ -43,7 +44,8 @@ export class Mesh extends Resource {
     attribs: AttribDescriptor[],
     options: MeshOptions = {},
   ) {
-    super(context);
+    super();
+    this.gl = context.gl;
     if (!options.indices && options.vertexCount === undefined)
       throw new Error('Mesh: vertexCount required for non-indexed draws');
     this.vertexCount = options.vertexCount ?? 0;

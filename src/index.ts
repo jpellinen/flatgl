@@ -1,8 +1,8 @@
 // Core ECS
 export { World } from './core/World';
+export { Component } from './core/Component';
 export type { Entity } from './core/Entity';
-export { Script } from './components/Script';
-export type { ScriptBehaviour } from './components/Script';
+export { ScriptBehaviour } from './components/ScriptBehaviour';
 export { Transform } from './components/Transform';
 
 // Math

@@ -1,15 +1,18 @@
+import { Component } from '@/core/Component';
 import { Vec3 } from '@/math/Vec3';
 import { Mat4 } from '@/math/Mat4';
 import { Entity } from '@/core/Entity';
 import { World } from '@/core/World';
 
-export class Transform {
+export class Transform extends Component {
   constructor(
     public position: Vec3 = new Vec3(0, 0, 0),
     public rotation: Vec3 = new Vec3(0, 0, 0),
     public scale: Vec3 = new Vec3(1, 1, 1),
     public parent?: Entity,
-  ) {}
+  ) {
+    super();
+  }
 
   // Returns T * Rx * Ry * Rz * S (TRS order), local space
   matrix(): Mat4 {

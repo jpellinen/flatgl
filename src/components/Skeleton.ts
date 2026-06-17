@@ -1,7 +1,8 @@
+import { Component } from '@/core/Component';
 import { Mat4 } from '@/math/Mat4';
 const IDENTITY_16 = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1] as const;
 
-export class Skeleton {
+export class Skeleton extends Component {
   readonly jointCount: number;
   readonly parentIndices: Int16Array;
   readonly inverseBindMatrices: Float32Array;
@@ -14,6 +15,7 @@ export class Skeleton {
   readonly worldMats: Mat4[];
 
   constructor(parentIndices: Int16Array, inverseBindMatrices: Float32Array) {
+    super();
     this.jointCount = parentIndices.length;
     this.parentIndices = parentIndices;
     this.inverseBindMatrices = inverseBindMatrices;

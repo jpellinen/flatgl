@@ -1,13 +1,18 @@
+import { Component } from '@/core/Component';
 import { RenderContext } from '@/renderer/RenderContext';
-import { Resource } from '@/renderer/Resource';
 import { Shader } from '@/renderer/Shader';
 import { Texture } from '@/renderer/Texture';
 
-export class Material extends Resource {
+export class Material extends Component {
+  protected readonly gl: WebGL2RenderingContext;
   private textures = new Map<number, { texture: Texture; name: string }>();
 
-  constructor(context: RenderContext, private shader: Shader) {
-    super(context);
+  constructor(
+    context: RenderContext,
+    private shader: Shader,
+  ) {
+    super();
+    this.gl = context.gl;
   }
 
   bind(): void {

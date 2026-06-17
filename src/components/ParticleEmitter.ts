@@ -1,3 +1,4 @@
+import { Component } from '@/core/Component';
 import { Texture } from '../renderer/Texture';
 import { Vec3 } from '../math/Vec3';
 
@@ -17,7 +18,7 @@ export interface ParticleEmitterOptions {
   rotationSpeed?: number;
 }
 
-export class ParticleEmitter {
+export class ParticleEmitter extends Component {
   active = true;
 
   readonly maxParticles: number;
@@ -48,11 +49,8 @@ export class ParticleEmitter {
     return this._liveCount;
   }
 
-  get particleCount(): number {
-    return this._liveCount;
-  }
-
   constructor(opts: ParticleEmitterOptions = {}) {
+    super();
     this.maxParticles = opts.maxParticles ?? 500;
     this.rate = opts.rate ?? 30;
     this.lifetime = opts.lifetime ?? 1.5;
