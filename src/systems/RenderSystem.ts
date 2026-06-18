@@ -49,9 +49,7 @@ export class RenderSystem implements System {
     private light: LightState,
     private target?: Framebuffer,
     private aspect: number = 1,
-    private clearColor: [number, number, number, number] = [
-      0.08, 0.08, 0.12, 1,
-    ],
+    private clearColor: Vec3 = new Vec3(0.08, 0.08, 0.12),
   ) {}
 
   setTarget(fb: Framebuffer): void {
@@ -140,7 +138,7 @@ export class RenderSystem implements System {
       gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
     }
 
-    gl.clearColor(...this.clearColor);
+    gl.clearColor(this.clearColor.x, this.clearColor.y, this.clearColor.z, 1);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
     this.drawCalls = 0;

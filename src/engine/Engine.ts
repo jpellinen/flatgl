@@ -42,6 +42,7 @@ export interface EngineOptions {
   camera?: CameraOptions;
   light?: LightOptions;
   postProcess?: PostProcessOptions;
+  clearColor?: Vec3;
 }
 
 const SHADOW_MAP_SIZE = 2048;
@@ -164,6 +165,7 @@ export class Engine {
       lightSpaceMat,
       skinnedShadowShader,
     );
+    const clearColor = options.clearColor ?? new Vec3(0.08, 0.08, 0.12);
     this.renderSystem = new RenderSystem(
       this.context,
       this.world,
@@ -171,6 +173,7 @@ export class Engine {
       this.lightState,
       this.sceneFb,
       1,
+      clearColor,
     );
 
     this.particleSystem = new ParticleSystem(
