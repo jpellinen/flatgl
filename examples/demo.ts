@@ -1,12 +1,12 @@
 import {
   Engine,
-  ScriptBehaviour,
+  Script,
   Transform,
   Vec3,
   ObjLoader,
   //GltfLoader,
 } from '../src/index';
-import type { Entity } from '../src/index';
+import type { ScriptBehavior, Entity } from '../src/index';
 import type { World } from '../src/core/World';
 
 import treeSrc from './assets/tree.obj';
@@ -236,7 +236,7 @@ async function init(): Promise<void> {
   world.add(fireOrigin, fireEmitter);
 
   // Orbit camera: auto-rotate, drag to orbit, scroll to zoom
-  class OrbitCamera extends ScriptBehaviour {
+  class OrbitCamera implements ScriptBehavior {
     private theta = 0.4;
     private phi = 0.45;
     private radius = 10;
@@ -276,7 +276,7 @@ async function init(): Promise<void> {
     }
   }
 
-  world.add(engine.cameraEntity, new OrbitCamera());
+  world.add(engine.cameraEntity, new Script(new OrbitCamera()));
 
   const stop = engine.start();
   engine.showStats();

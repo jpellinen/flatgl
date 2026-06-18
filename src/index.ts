@@ -2,7 +2,8 @@
 export { World } from './core/World';
 export { Component } from './core/Component';
 export type { Entity } from './core/Entity';
-export { ScriptBehaviour } from './components/ScriptBehaviour';
+export { Script } from './components/Script';
+export type { ScriptBehavior } from './components/Script';
 export { Transform } from './components/Transform';
 
 // Math

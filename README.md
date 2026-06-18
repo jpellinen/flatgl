@@ -15,7 +15,7 @@ An opinionated WebGL 2.0 engine for games and game-like apps. Zero runtime depen
 - **Frustum culling** — camera and light frustums, bounding spheres auto-computed from mesh geometry
 - **Camera** — perspective (default) or orthographic, follows `camera.target`
 - **Keyboard + mouse input** — `engine.input` with `mouseWorld` unprojected to the Y=0 ground plane; scroll wheel zoom
-- **Script behaviours** — `onStart` / `onUpdate` / `onDestroy` lifecycle per entity
+- **Script behaviors** — `onStart` / `onUpdate` / `onDestroy` lifecycle per entity
 - **Particle system** — GPU-instanced billboard particles with per-particle physics, size/color lerp, and additive or alpha blending
 - **Transform hierarchy** — parent entity references; child transforms inherit parent TRS
 - **Skeletal animation** — GPU skinning via glTF 2.0 (.glb); up to 64 bones, linear keyframe interpolation and quaternion slerp
@@ -29,7 +29,7 @@ An opinionated WebGL 2.0 engine for games and game-like apps. Zero runtime depen
 
 ```typescript
 import { Engine, Script, Transform, Vec3, ObjLoader } from 'flatgl';
-import type { ScriptBehaviour, Entity, World } from 'flatgl';
+import type { ScriptBehavior, Entity, World } from 'flatgl';
 
 const engine = Engine.create({
   canvas: document.getElementById('glcanvas') as HTMLCanvasElement,
@@ -42,7 +42,7 @@ const { world, input, assets } = engine;
 const mesh = assets.createMesh(ObjLoader.parse(objSource));
 const mat = assets.createMaterial({ color: new Vec3(0.9, 0.8, 0.6) });
 
-class PlayerMove implements ScriptBehaviour {
+class PlayerMove implements ScriptBehavior {
   onUpdate(entity: Entity, w: World, dt: number): void {
     const t = w.get(entity, Transform)!;
     const dx = (input.isDown('d') ? 1 : 0) - (input.isDown('a') ? 1 : 0);
@@ -72,7 +72,7 @@ window.addEventListener('beforeunload', () => {
 
 ## Skeletal Animation
 
-Export a rigged mesh from Blender as **glTF 2.0 Binary (.glb)** with *Include → Armature* and *Animation → Include → Animations* checked.
+Export a rigged mesh from Blender as **glTF 2.0 Binary (.glb)** with _Include → Armature_ and _Animation → Include → Animations_ checked.
 
 ```typescript
 import { Engine, GltfLoader, Transform, Vec3 } from 'flatgl';
@@ -105,7 +105,9 @@ engine.start();
 For large assets that should not be bundled, use the async URL variant instead:
 
 ```typescript
-const { mesh, skeleton, animator } = await assets.loadGltf('/assets/character.glb');
+const { mesh, skeleton, animator } = await assets.loadGltf(
+  '/assets/character.glb',
+);
 ```
 
 ### Blender export checklist
@@ -200,15 +202,22 @@ input.mouseUp: boolean               // released this frame
 input.wheelDelta: number             // scroll wheel accumulator (zoom)
 ```
 
-### `ScriptBehaviour`
+### `Script` / `ScriptBehavior`
 
 ```typescript
-interface ScriptBehaviour {
+interface ScriptBehavior {
   onStart?(entity: Entity, world: World): void;
   onUpdate(entity: Entity, world: World, dt: number): void;
   onDestroy?(entity: Entity, world: World): void;
 }
+
+class Script extends Component {
+  constructor(...behaviors: ScriptBehavior[]);
+  readonly behaviors: ScriptBehavior[];
+}
 ```
+
+Implement `ScriptBehavior` on a plain class, then wrap it in `Script` to attach it to an entity. Multiple behaviors can share one `Script`.
 
 Use `engine.destroyEntity(entity)` instead of `world.destroy()` to ensure `onDestroy` fires.
 
