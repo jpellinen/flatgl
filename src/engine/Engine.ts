@@ -18,6 +18,7 @@ import type { CameraOptions } from './Camera';
 import { InputManager } from './InputManager';
 import type { InputSnapshot } from './InputManager';
 import type { ParticleEmitterOptions } from '../components/ParticleEmitter';
+import { Transform } from '../components/Transform';
 import { Mat4 } from '../math/Mat4';
 import { Vec3 } from '../math/Vec3';
 
@@ -132,6 +133,13 @@ export class Engine {
 
     // ECS world + systems
     this.world = new World();
+    this.world.onDestroy((entity) => {
+      for (const child of this.world.query(Transform)) {
+        if (this.world.get(child, Transform)?.parent === entity) {
+          this.world.destroy(child);
+        }
+      }
+    });
     this.cameraEntity = this.world.create();
     this.scriptSystem = new ScriptSystem(this.world);
 

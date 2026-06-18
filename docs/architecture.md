@@ -116,18 +116,3 @@ All math types (`Vec3`, `Mat4`, `Quat`) are immutable — every operation return
 ## Shader System
 
 Shaders are plain GLSL 3.00 ES strings imported as modules (via a custom esbuild loader). `Shader.fromSource()` compiles, links, and wraps them. The `USE_SKINNING` preprocessor define is toggled by passing `['USE_SKINNING']` to `fromSource`. Uniform locations are looked up by name via `gl.getUniformLocation`; there is no automatic caching — callers are responsible for caching locations if they matter for performance.
-
----
-
-## Known Issues (as of last audit)
-
-See [PLAN.md](../PLAN.md) for the full prioritised fix list. The headline items:
-
-1. VBO leak in `Mesh` — the vertex `Buffer` is never freed
-2. `UNPACK_FLIP_Y_WEBGL` set globally and never reset — corrupts all subsequent texture uploads
-3. `NaN` duration from zero-length glTF animation accessors crashes the skeleton silently
-4. `AnimationSystem` assumes topologically sorted joints — wrong ordering from some exporters causes a `TypeError` crash
-5. Cyclic `Transform.parent` chain causes a stack overflow on every frame
-6. `getWorldMatrix` called twice per entity per frame in `RenderSystem`
-7. `ParticleSystem` fetches uniform locations every frame (should be cached at init)
-8. `World.query()` builds the cache key string before checking the cache
