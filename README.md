@@ -132,7 +132,6 @@ engine.input: InputSnapshot       // keyboard + mouse state (read each frame)
 engine.assets: AssetFactory       // mesh, material, texture, emitter creation
 
 engine.start(): () => void        // starts RAF loop, returns stop function
-engine.destroyEntity(entity: Entity): void  // fires onDestroy, then removes
 engine.showStats(visible?: boolean): void   // toggle real-time stats overlay
 engine.showBoundingSpheres(visible?: boolean): void  // toggle debug circles
 engine.destroy(): void
@@ -219,7 +218,7 @@ class Script extends Component {
 
 Implement `ScriptBehavior` on a plain class, then wrap it in `Script` to attach it to an entity. Multiple behaviors can share one `Script`.
 
-Use `engine.destroyEntity(entity)` instead of `world.destroy()` to ensure `onDestroy` fires.
+Use `world.destroy(entity)` to remove an entity — `onDestroy` fires automatically.
 
 ### `ParticleEmitter`
 

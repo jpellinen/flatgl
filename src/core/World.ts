@@ -11,11 +11,16 @@ export class World {
   private queryCache = new Map<string, { result: Entity[]; ver: number }>();
   private ctorIds = new Map<Ctor<unknown>, number>();
   private nextCtorId = 0;
+  private destroyHooks: ((entity: Entity) => void)[] = [];
 
   private ctorId(ctor: Ctor<unknown>): number {
     let id = this.ctorIds.get(ctor);
     if (id === undefined) this.ctorIds.set(ctor, (id = this.nextCtorId++));
     return id;
+  }
+
+  onDestroy(hook: (entity: Entity) => void): void {
+    this.destroyHooks.push(hook);
   }
 
   create(): Entity {
@@ -42,6 +47,7 @@ export class World {
   }
 
   destroy(entity: Entity): void {
+    for (const hook of this.destroyHooks) hook(entity);
     for (const map of this.store.values()) {
       const c = map.get(entity);
       if (c === undefined) continue;
@@ -53,6 +59,15 @@ export class World {
   }
 
   destroyAll(): void {
+    if (this.destroyHooks.length > 0) {
+      const entities = new Set<Entity>();
+      for (const map of this.store.values()) {
+        for (const entity of map.keys()) entities.add(entity);
+      }
+      for (const entity of entities) {
+        for (const hook of this.destroyHooks) hook(entity);
+      }
+    }
     const seen = new Set<object>();
     for (const map of this.store.values()) {
       for (const component of map.values()) {

@@ -263,13 +263,9 @@ export class Engine {
     return () => cancelAnimationFrame(rafId);
   }
 
-  destroyEntity(entity: Entity): void {
-    this.scriptSystem.destroyEntity(entity);
-  }
-
   destroy(): void {
     this.inputSystem.destroy();
-    this.scriptSystem.destroyAll();
+    this.world.destroyAll();
     for (const s of this.systems) s.destroy?.();
     this.shadowFb.destroy();
     this.sceneFb.destroy();

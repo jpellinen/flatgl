@@ -205,13 +205,11 @@ Fix: add `this.statsEl?.remove(); this.statsEl = null;` to `destroy()`.
 
 ---
 
-### 18. `world.destroy()` bypass leaves stale `ScriptSystem.started` entries
+### ~~18. `world.destroy()` bypass leaves stale `ScriptSystem.started` entries~~
 
 **File:** `src/systems/ScriptSystem.ts`
 
-Calling `world.destroy(entity)` directly (instead of `engine.destroyEntity(entity)`) skips `ScriptSystem.destroyEntity()`, leaving behavior instances in `started` forever. If those same instances are later re-added to a new entity, `onStart` is silently skipped.
-
-This is partially a documentation issue — the README already says to use `engine.destroyEntity()`. But it is easy to call `world.destroy()` directly and get silent misbehaviour.
+Fixed: `World` now fires registered destroy hooks before removing components. `ScriptSystem` registers a hook in its constructor that calls `onDestroy` and clears `started`. `engine.destroyEntity()` and `ScriptSystem.destroyEntity/destroyAll` are removed — `world.destroy()` and `world.destroyAll()` are now the correct and safe paths.
 
 ---
 
