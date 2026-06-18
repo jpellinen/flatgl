@@ -35,6 +35,7 @@ export class Mesh extends Component {
   readonly mode: DrawMode;
   protected vao: WebGLVertexArrayObject;
   private ibo: WebGLBuffer | null = null;
+  private buffer: Buffer;
   /** @internal — set by engine.assets.createMesh(); used for frustum culling */
   boundingSphere: { center: Vec3; radius: number } | null = null;
 
@@ -46,6 +47,7 @@ export class Mesh extends Component {
   ) {
     super();
     this.gl = context.gl;
+    this.buffer = buffer;
     if (!options.indices && options.vertexCount === undefined)
       throw new Error('Mesh: vertexCount required for non-indexed draws');
     this.vertexCount = options.vertexCount ?? 0;
@@ -98,6 +100,7 @@ export class Mesh extends Component {
   }
 
   destroy(): void {
+    this.buffer.destroy();
     if (this.ibo) this.gl.deleteBuffer(this.ibo);
     this.gl.deleteVertexArray(this.vao);
   }

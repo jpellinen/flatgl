@@ -3,8 +3,6 @@ import { World } from '@/core/World';
 import { Skeleton } from '@/components/Skeleton';
 import { Animator } from '@/components/Animator';
 import { Mat4 } from '@/math/Mat4';
-import { Quat } from '@/math/Quat';
-import { Vec3 } from '@/math/Vec3';
 
 // Returns the bracketing keyframe indices and interpolation alpha for time t.
 function sampleTime(
@@ -84,6 +82,9 @@ function slerp4(
 }
 
 export class AnimationSystem implements System {
+  private readonly localScratch = new Float32Array(16);
+  private readonly mulScratch = new Float32Array(16);
+
   constructor(private world: World) {}
 
   update(dt: number): void {
@@ -121,30 +122,43 @@ export class AnimationSystem implements System {
         }
       }
 
-      // Forward pass — joints are in topological order (parent index < child index).
+      // Forward pass — iterate in topological order so parents are always computed first.
       const worldMats = skeleton.worldMats;
-      for (let j = 0; j < skeleton.jointCount; j++) {
-        const local = Mat4.fromTRS(
-          new Vec3(
-            skeleton.localTranslations[j * 3],
-            skeleton.localTranslations[j * 3 + 1],
-            skeleton.localTranslations[j * 3 + 2],
-          ),
-          Quat.fromArray(skeleton.localRotations, j * 4),
-          new Vec3(
-            skeleton.localScales[j * 3],
-            skeleton.localScales[j * 3 + 1],
-            skeleton.localScales[j * 3 + 2],
-          ),
+      const ibm = skeleton.inverseBindMatrices;
+      const lt = skeleton.localTranslations;
+      const lr = skeleton.localRotations;
+      const ls = skeleton.localScales;
+      const localScratch = this.localScratch;
+      const mulScratch = this.mulScratch;
+
+      for (let oi = 0; oi < skeleton.jointCount; oi++) {
+        const j = skeleton.topoOrder[oi];
+        const jo = j * 16;
+
+        Mat4.fromTRSInto(
+          localScratch,
+          lt[j * 3],
+          lt[j * 3 + 1],
+          lt[j * 3 + 2],
+          lr[j * 4],
+          lr[j * 4 + 1],
+          lr[j * 4 + 2],
+          lr[j * 4 + 3],
+          ls[j * 3],
+          ls[j * 3 + 1],
+          ls[j * 3 + 2],
         );
+
         const p = skeleton.parentIndices[j];
-        worldMats[j] = p >= 0 ? worldMats[p].multiply(local) : local;
-        skeleton.jointMatrices.set(
-          worldMats[j].multiply(
-            Mat4.fromArray(skeleton.inverseBindMatrices, j * 16),
-          ).array,
-          j * 16,
-        );
+        if (p >= 0) {
+          Mat4.multiplyInto(mulScratch, worldMats, p * 16, localScratch, 0);
+          worldMats.set(mulScratch, jo);
+        } else {
+          worldMats.set(localScratch, jo);
+        }
+
+        Mat4.multiplyInto(mulScratch, worldMats, jo, ibm, jo);
+        skeleton.jointMatrices.set(mulScratch, jo);
       }
     }
   }

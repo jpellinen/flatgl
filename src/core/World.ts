@@ -70,10 +70,19 @@ export class World {
 
   query(...types: Ctor<unknown>[]): Entity[] {
     if (types.length === 0) return [];
-    const key = types
-      .map((t) => this.ctorId(t))
-      .sort((a, b) => a - b)
-      .join(',');
+    let key: string;
+    if (types.length === 1) {
+      key = String(this.ctorId(types[0]));
+    } else if (types.length === 2) {
+      const a = this.ctorId(types[0]);
+      const b = this.ctorId(types[1]);
+      key = a <= b ? `${a},${b}` : `${b},${a}`;
+    } else {
+      key = types
+        .map((t) => this.ctorId(t))
+        .sort((a, b) => a - b)
+        .join(',');
+    }
     const cached = this.queryCache.get(key);
     if (cached && cached.ver === this.version) return cached.result;
 

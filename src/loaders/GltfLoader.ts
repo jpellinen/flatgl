@@ -195,7 +195,8 @@ function parse(json: any, buffers: ArrayBuffer[]): GltfDocument {
       const sampler = anim.samplers[ch.sampler];
       const times = rf(sampler.input);
       const values = rf(sampler.output);
-      duration = Math.max(duration, times[times.length - 1]);
+      if (times.length > 0)
+        duration = Math.max(duration, times[times.length - 1]);
       tracks.push({ jointIndex, path, times, values });
     }
     clips.push({ name: anim.name ?? `clip_${clips.length}`, duration, tracks });

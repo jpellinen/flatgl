@@ -12,3 +12,16 @@ export function inFrustum(
   }
   return true;
 }
+
+export function inFrustumXYZ(
+  planes: Plane[],
+  cx: number,
+  cy: number,
+  cz: number,
+  radius: number,
+): boolean {
+  for (const [a, b, c, d] of planes) {
+    if (a * cx + b * cy + c * cz + d < -radius) return false;
+  }
+  return true;
+}

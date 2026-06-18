@@ -11,7 +11,8 @@ import { Material } from '@/components/Material';
 import { Transform, getWorldMatrix } from '@/components/Transform';
 import { Mat4 } from '@/math/Mat4';
 import { Vec3 } from '@/math/Vec3';
-import { inFrustum } from '@/math/Frustum';
+import { inFrustumXYZ } from '@/math/Frustum';
+import type { Entity } from '@/core/Entity';
 
 import debugVertSrc from '@/shaders/debug.vert.glsl';
 import debugFragSrc from '@/shaders/debug.frag.glsl';
@@ -39,6 +40,7 @@ export class RenderSystem implements System {
 
   private debugShader: Shader | null = null;
   private debugMesh: Mesh | null = null;
+  private readonly worldMatCache = new Map<Entity, Mat4 | null>();
 
   constructor(
     private context: RenderContext,
@@ -99,13 +101,10 @@ export class RenderSystem implements System {
     shader.use();
     const mvpLoc = shader.uniformLocation('u_mvp');
 
-    for (const entity of [
-      ...this.world.query(Mesh),
-      ...this.world.query(SkinnedMesh),
-    ]) {
+    const drawSphere = (entity: Entity): void => {
       const m = (this.world.get(entity, SkinnedMesh) ??
         this.world.get(entity, Mesh))!;
-      if (!m.boundingSphere) continue;
+      if (!m.boundingSphere) return;
 
       const wm = this.world.get(entity, Transform)
         ? getWorldMatrix(entity, this.world)
@@ -125,7 +124,10 @@ export class RenderSystem implements System {
       );
       if (mvpLoc) gl.uniformMatrix4fv(mvpLoc, false, vp.multiply(model).array);
       mesh.draw();
-    }
+    };
+
+    for (const entity of this.world.query(Mesh)) drawSphere(entity);
+    for (const entity of this.world.query(SkinnedMesh)) drawSphere(entity);
   }
 
   render(): void {
@@ -151,19 +153,20 @@ export class RenderSystem implements System {
     const proj = this.camera.projectionMatrix(this.aspect);
     const planes = proj.multiply(view).frustumPlanes();
 
-    const allEntities = [
-      ...this.world.query(Mesh, Material),
-      ...this.world.query(SkinnedMesh, Material),
-    ];
-    this.total = allEntities.length;
+    const meshEntities = this.world.query(Mesh, Material);
+    const skinnedEntities = this.world.query(SkinnedMesh, Material);
+    this.total = meshEntities.length + skinnedEntities.length;
 
+    this.worldMatCache.clear();
     const groups = new Map<Material, number[]>();
-    for (const entity of allEntities) {
+
+    const cullAndGroup = (entity: Entity): void => {
       const mesh = (this.world.get(entity, SkinnedMesh) ??
         this.world.get(entity, Mesh))!;
       const worldMat = this.world.get(entity, Transform)
         ? getWorldMatrix(entity, this.world)
         : null;
+      this.worldMatCache.set(entity, worldMat);
       if (mesh.boundingSphere !== null) {
         const b = worldMat ? worldMat.array : Mat4.identity().array;
         const lc = mesh.boundingSphere.center;
@@ -174,9 +177,8 @@ export class RenderSystem implements System {
         const bsy = Math.sqrt(b[4] * b[4] + b[5] * b[5] + b[6] * b[6]);
         const bsz = Math.sqrt(b[8] * b[8] + b[9] * b[9] + b[10] * b[10]);
         const sr = mesh.boundingSphere.radius * Math.max(bsx, bsy, bsz);
-        if (!inFrustum(planes, new Vec3(cx, cy, cz), sr)) continue;
+        if (!inFrustumXYZ(planes, cx, cy, cz, sr)) return;
       }
-
       this.visible++;
       const mat = this.world.get(entity, Material)!;
       let group = groups.get(mat);
@@ -185,7 +187,10 @@ export class RenderSystem implements System {
         groups.set(mat, group);
       }
       group.push(entity);
-    }
+    };
+
+    for (const entity of meshEntities) cullAndGroup(entity);
+    for (const entity of skinnedEntities) cullAndGroup(entity);
     this.batches = groups.size;
 
     const { direction, color, intensity, ambient } = this.light;
@@ -203,11 +208,8 @@ export class RenderSystem implements System {
       for (const entity of entities) {
         const mesh = (this.world.get(entity, SkinnedMesh) ??
           this.world.get(entity, Mesh))!;
-        if (this.world.get(entity, Transform))
-          material.setMatrix4(
-            'u_model',
-            getWorldMatrix(entity, this.world).array,
-          );
+        const worldMat = this.worldMatCache.get(entity);
+        if (worldMat) material.setMatrix4('u_model', worldMat.array);
         const skeleton = this.world.get(entity, Skeleton);
         if (skeleton)
           material.setMatrix4('u_jointMatrices[0]', skeleton.jointMatrices);
@@ -219,5 +221,10 @@ export class RenderSystem implements System {
     }
 
     if (this.showBoundingSpheres) this.drawBoundingSpheres(view, proj);
+  }
+
+  destroy(): void {
+    this.debugShader?.destroy();
+    this.debugMesh?.destroy();
   }
 }

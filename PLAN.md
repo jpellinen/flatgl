@@ -6,7 +6,7 @@ Findings from the full codebase audit. Ordered by severity. Check items off as t
 
 ## Critical — Fix immediately
 
-### 1. VBO leak in `Mesh`
+### ~~1. VBO leak in `Mesh`~~
 
 **File:** `src/components/Mesh.ts`
 
@@ -16,7 +16,7 @@ Fix: store the buffer reference(s) in the constructor and call `buffer.destroy()
 
 ---
 
-### 2. `UNPACK_FLIP_Y_WEBGL` set globally, never reset
+### ~~2. `UNPACK_FLIP_Y_WEBGL` set globally, never reset~~
 
 **File:** `src/renderer/Texture.ts` line 113
 
@@ -26,7 +26,7 @@ Fix: call `gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false)` immediately after the 
 
 ---
 
-### 3. `GltfLoader` — empty accessor produces `NaN` clip duration
+### ~~3. `GltfLoader` — empty accessor produces `NaN` clip duration~~
 
 **File:** `src/loaders/GltfLoader.ts` line 198
 
@@ -40,7 +40,7 @@ Fix: guard before the `Math.max` call — `if (times.length > 0) duration = Math
 
 ---
 
-### 4. `AnimationSystem` — assumes topologically sorted joints
+### ~~4. `AnimationSystem` — assumes topologically sorted joints~~
 
 **File:** `src/systems/AnimationSystem.ts` lines 124–141
 
@@ -50,7 +50,7 @@ Fix: either topologically sort joints in `GltfLoader` when building the `Skeleto
 
 ---
 
-### 5. Cyclic `Transform.parent` causes stack overflow
+### ~~5. Cyclic `Transform.parent` causes stack overflow~~
 
 **File:** `src/components/Transform.ts` lines 27–33
 
@@ -62,7 +62,7 @@ Fix: add a depth counter or a small visited set (max hierarchy depth is typicall
 
 ## High — Fix soon
 
-### 6. `RenderSystem` has no `destroy()` method
+### ~~6. `RenderSystem` has no `destroy()` method~~
 
 **File:** `src/systems/RenderSystem.ts`
 
@@ -72,7 +72,7 @@ Fix: add `destroy(): void` that calls `this.debugShader?.destroy()` and `this.de
 
 ---
 
-### 7. `Engine.destroy()` calls `world.destroyAll()` twice
+### ~~7. `Engine.destroy()` calls `world.destroyAll()` twice~~
 
 **File:** `src/engine/Engine.ts` lines 272–274
 
@@ -82,7 +82,7 @@ Fix: remove the redundant `this.world.destroyAll()` call on line 274 — `script
 
 ---
 
-### 8. `ShadowSystem` uses wrong bounding sphere center for frustum culling
+### ~~8. `ShadowSystem` uses wrong bounding sphere center for frustum culling~~
 
 **File:** `src/systems/ShadowSystem.ts` lines 54–62
 
@@ -111,7 +111,7 @@ const cz =
 
 ---
 
-### 9. `getWorldMatrix` called twice per entity per frame in `RenderSystem`
+### ~~9. `getWorldMatrix` called twice per entity per frame in `RenderSystem`~~
 
 **File:** `src/systems/RenderSystem.ts` lines 164–165, 209
 
@@ -121,7 +121,7 @@ Fix: compute all world matrices once into a `Map<Entity, Mat4>` during the cull 
 
 ---
 
-### 10. `ScriptSystem.started` — shared behavior instance suppresses `onStart` on second entity
+### ~~10. `ScriptSystem.started` — shared behavior instance suppresses `onStart` on second entity~~
 
 **File:** `src/systems/ScriptSystem.ts` lines 15–17
 
@@ -133,7 +133,7 @@ Fix: key `started` by `(entity, behavior)` pairs (e.g. a `Set<string>` with `"${
 
 ## Performance
 
-### 11. `ParticleSystem` fetches uniform locations every render frame
+### ~~11. `ParticleSystem` fetches uniform locations every render frame~~
 
 **File:** `src/systems/ParticleSystem.ts` lines 148–150
 
@@ -143,7 +143,7 @@ Fix: cache the three `WebGLUniformLocation` values in the constructor.
 
 ---
 
-### 12. `AnimationSystem` — 6–7 allocations per joint per frame
+### ~~12. `AnimationSystem` — 6–7 allocations per joint per frame~~
 
 **File:** `src/systems/AnimationSystem.ts` lines 127–144
 
@@ -153,7 +153,7 @@ Fix: add in-place variants (`Mat4.multiplyInto`, `Mat4.fromTRSInto`) that write 
 
 ---
 
-### 13. `World.query()` builds the cache key before checking the cache
+### ~~13. `World.query()` builds the cache key before checking the cache~~
 
 **File:** `src/core/World.ts` lines 73–76
 
@@ -163,7 +163,7 @@ Fix: build the key inside the cache-miss branch only, or use a `WeakMap`-based k
 
 ---
 
-### 14. `RenderSystem` / `ShadowSystem` — spread-concat allocates new entity array every frame
+### ~~14. `RenderSystem` / `ShadowSystem` — spread-concat allocates new entity array every frame~~
 
 **Files:** `src/systems/RenderSystem.ts` lines 155–156, `src/systems/ShadowSystem.ts` lines 45–47
 
@@ -173,7 +173,7 @@ Fix: iterate each query result directly in sequence without concatenating.
 
 ---
 
-### 15. Inverse bind matrices re-wrapped per joint per frame
+### ~~15. Inverse bind matrices re-wrapped per joint per frame~~
 
 **File:** `src/systems/AnimationSystem.ts` line 144
 
@@ -183,7 +183,7 @@ Fix: add `Skeleton.inverseBindMat4s: Mat4[]` pre-computed in the constructor, re
 
 ---
 
-### 16. `inFrustum` receives a `new Vec3` per entity per cull pass
+### ~~16. `inFrustum` receives a `new Vec3` per entity per cull pass~~
 
 **File:** `src/systems/RenderSystem.ts` line 177
 
@@ -195,7 +195,7 @@ Fix: add an `inFrustumXYZ(planes, cx, cy, cz, radius)` signature that takes scal
 
 ## Low / Informational
 
-### 17. Stats overlay `<div>` not removed by `Engine.destroy()`
+### ~~17. Stats overlay `<div>` not removed by `Engine.destroy()`~~
 
 **File:** `src/engine/Engine.ts`
 

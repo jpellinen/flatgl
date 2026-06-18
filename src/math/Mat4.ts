@@ -154,6 +154,68 @@ export class Mat4 {
     ]));
   }
 
+  // Writes result of a[aOff..] * b[bOff..] into out (column-major Float32Arrays).
+  static multiplyInto(
+    out: Float32Array,
+    a: Float32Array,
+    aOff: number,
+    b: Float32Array,
+    bOff: number,
+  ): void {
+    for (let col = 0; col < 4; col++) {
+      for (let row = 0; row < 4; row++) {
+        let sum = 0;
+        for (let k = 0; k < 4; k++)
+          sum += a[aOff + k * 4 + row] * b[bOff + col * 4 + k];
+        out[col * 4 + row] = sum;
+      }
+    }
+  }
+
+  // Writes TRS matrix into out (no allocations; takes raw scalar components).
+  static fromTRSInto(
+    out: Float32Array,
+    tx: number,
+    ty: number,
+    tz: number,
+    rx: number,
+    ry: number,
+    rz: number,
+    rw: number,
+    sx: number,
+    sy: number,
+    sz: number,
+  ): void {
+    const x2 = rx + rx,
+      y2 = ry + ry,
+      z2 = rz + rz;
+    const xx = rx * x2,
+      xy = rx * y2,
+      xz = rx * z2;
+    const yy = ry * y2,
+      yz = ry * z2,
+      zz = rz * z2;
+    const wx = rw * x2,
+      wy = rw * y2,
+      wz = rw * z2;
+    out[0] = (1 - (yy + zz)) * sx;
+    out[1] = (xy + wz) * sx;
+    out[2] = (xz - wy) * sx;
+    out[3] = 0;
+    out[4] = (xy - wz) * sy;
+    out[5] = (1 - (xx + zz)) * sy;
+    out[6] = (yz + wx) * sy;
+    out[7] = 0;
+    out[8] = (xz + wy) * sz;
+    out[9] = (yz - wx) * sz;
+    out[10] = (1 - (xx + yy)) * sz;
+    out[11] = 0;
+    out[12] = tx;
+    out[13] = ty;
+    out[14] = tz;
+    out[15] = 1;
+  }
+
   multiply(b: Mat4): Mat4 {
     const a = this.array;
     const bv = b.array;

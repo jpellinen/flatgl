@@ -271,10 +271,11 @@ export class Engine {
     this.inputSystem.destroy();
     this.scriptSystem.destroyAll();
     for (const s of this.systems) s.destroy?.();
-    this.world.destroyAll();
     this.shadowFb.destroy();
     this.sceneFb.destroy();
     this.screenPass.destroy();
     this.defaultTexture.destroy();
+    this.statsEl?.remove();
+    this.statsEl = null;
   }
 }

@@ -24,10 +24,11 @@ export class Transform extends Component {
   }
 }
 
-export function getWorldMatrix(entity: Entity, world: World): Mat4 {
+export function getWorldMatrix(entity: Entity, world: World, _depth = 0): Mat4 {
+  if (_depth > 32) throw new Error('Transform: cyclic parent chain detected');
   const t = world.get(entity, Transform);
   if (!t) return Mat4.identity();
   const local = t.matrix();
   if (t.parent === undefined) return local;
-  return getWorldMatrix(t.parent, world).multiply(local);
+  return getWorldMatrix(t.parent, world, _depth + 1).multiply(local);
 }

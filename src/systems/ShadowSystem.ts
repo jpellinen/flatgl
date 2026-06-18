@@ -1,6 +1,5 @@
 import { Mat4 } from '@/math/Mat4';
-import { Vec3 } from '@/math/Vec3';
-import { inFrustum } from '@/math/Frustum';
+import { inFrustumXYZ } from '@/math/Frustum';
 import { Framebuffer } from '@/renderer/Framebuffer';
 import { RenderContext } from '@/renderer/RenderContext';
 import { Shader } from '@/renderer/Shader';
@@ -9,6 +8,7 @@ import { Mesh } from '@/components/Mesh';
 import { SkinnedMesh } from '@/components/SkinnedMesh';
 import { Skeleton } from '@/components/Skeleton';
 import { Transform, getWorldMatrix } from '@/components/Transform';
+import type { Entity } from '@/core/Entity';
 import { System } from '@/core/System';
 import { World } from '@/core/World';
 
@@ -42,25 +42,23 @@ export class ShadowSystem implements System {
     const planes = this.lightSpaceMatrix.frustumPlanes();
     let activeMaterial: Material | null = null;
 
-    const entities = [
-      ...this.world.query(Mesh, Transform),
-      ...this.world.query(SkinnedMesh, Transform),
-    ];
-
-    for (const entity of entities) {
+    const drawEntity = (entity: Entity): void => {
       const mesh = (this.world.get(entity, SkinnedMesh) ??
         this.world.get(entity, Mesh))!;
       const worldMat = getWorldMatrix(entity, this.world);
-      const center = new Vec3(
-        worldMat.array[12],
-        worldMat.array[13],
-        worldMat.array[14],
-      );
-      if (
-        mesh.boundingSphere !== null &&
-        !inFrustum(planes, center, mesh.boundingSphere.radius)
-      )
-        continue;
+
+      if (mesh.boundingSphere !== null) {
+        const b = worldMat.array;
+        const lc = mesh.boundingSphere.center;
+        const cx = b[0] * lc.x + b[4] * lc.y + b[8] * lc.z + b[12];
+        const cy = b[1] * lc.x + b[5] * lc.y + b[9] * lc.z + b[13];
+        const cz = b[2] * lc.x + b[6] * lc.y + b[10] * lc.z + b[14];
+        const bsx = Math.sqrt(b[0] * b[0] + b[1] * b[1] + b[2] * b[2]);
+        const bsy = Math.sqrt(b[4] * b[4] + b[5] * b[5] + b[6] * b[6]);
+        const bsz = Math.sqrt(b[8] * b[8] + b[9] * b[9] + b[10] * b[10]);
+        const sr = mesh.boundingSphere.radius * Math.max(bsx, bsy, bsz);
+        if (!inFrustumXYZ(planes, cx, cy, cz, sr)) return;
+      }
 
       const skeleton = this.world.get(entity, Skeleton);
       const targetMat =
@@ -76,7 +74,11 @@ export class ShadowSystem implements System {
         targetMat.setMatrix4('u_jointMatrices[0]', skeleton.jointMatrices);
       mesh.draw();
       this.drawCalls++;
-    }
+    };
+
+    for (const entity of this.world.query(Mesh, Transform)) drawEntity(entity);
+    for (const entity of this.world.query(SkinnedMesh, Transform))
+      drawEntity(entity);
   }
 
   destroy(): void {

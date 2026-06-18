@@ -60,6 +60,7 @@ export class Texture extends Resource {
         (desc.data ?? null) as ArrayBufferView | null,
       );
     }
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
 
     if (desc.generateMipmap) gl.generateMipmap(gl.TEXTURE_2D);
 

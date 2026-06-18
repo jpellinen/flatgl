@@ -38,6 +38,9 @@ export class ParticleSystem implements System {
   private gpuStates = new Map<ParticleEmitter, GpuState>();
   private view: Mat4 = Mat4.identity();
   private proj: Mat4 = Mat4.identity();
+  private viewLoc: WebGLUniformLocation | null = null;
+  private projLoc: WebGLUniformLocation | null = null;
+  private texLoc: WebGLUniformLocation | null = null;
 
   constructor(
     context: RenderContext,
@@ -52,6 +55,9 @@ export class ParticleSystem implements System {
     this.target = target;
     this.defaultTexture = defaultTexture;
     this.shader = Shader.fromSource(context, particleVertSrc, particleFragSrc);
+    this.viewLoc = this.shader.uniformLocation('u_view');
+    this.projLoc = this.shader.uniformLocation('u_projection');
+    this.texLoc = this.shader.uniformLocation('u_texture');
   }
 
   setTarget(fb: Framebuffer): void {
@@ -145,12 +151,9 @@ export class ParticleSystem implements System {
     gl.depthMask(false);
 
     this.shader.use();
-    const viewLoc = this.shader.uniformLocation('u_view');
-    const projLoc = this.shader.uniformLocation('u_projection');
-    const texLoc = this.shader.uniformLocation('u_texture');
-    if (viewLoc) gl.uniformMatrix4fv(viewLoc, false, this.view.array);
-    if (projLoc) gl.uniformMatrix4fv(projLoc, false, this.proj.array);
-    if (texLoc) gl.uniform1i(texLoc, 0);
+    if (this.viewLoc) gl.uniformMatrix4fv(this.viewLoc, false, this.view.array);
+    if (this.projLoc) gl.uniformMatrix4fv(this.projLoc, false, this.proj.array);
+    if (this.texLoc) gl.uniform1i(this.texLoc, 0);
 
     for (const entity of entities) {
       const emitter = this.world.get(entity, ParticleEmitter)!;

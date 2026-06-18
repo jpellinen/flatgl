@@ -1,5 +1,4 @@
 import { Component } from '@/core/Component';
-import { Mat4 } from '@/math/Mat4';
 
 const IDENTITY_16 = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1] as const;
 
@@ -13,7 +12,10 @@ export class Skeleton extends Component {
   readonly localScales: Float32Array;
 
   readonly jointMatrices: Float32Array;
-  readonly worldMats: Mat4[];
+  /** Flat Float32Array of size jointCount * 16, column-major world matrices. */
+  readonly worldMats: Float32Array;
+  /** Joint indices in topological order (parents before children). */
+  readonly topoOrder: number[];
 
   constructor(parentIndices: Int16Array, inverseBindMatrices: Float32Array) {
     super();
@@ -45,6 +47,34 @@ export class Skeleton extends Component {
       }
     }
 
-    this.worldMats = new Array(this.jointCount);
+    // Flat world matrices, initialized to identity
+    this.worldMats = new Float32Array(this.jointCount * 16);
+    for (let i = 0; i < this.jointCount; i++) {
+      const o = i * 16;
+      this.worldMats[o] = 1;
+      this.worldMats[o + 5] = 1;
+      this.worldMats[o + 10] = 1;
+      this.worldMats[o + 15] = 1;
+    }
+
+    // Topological sort: parents before children (Kahn's algorithm on a forest)
+    const children: number[][] = Array.from(
+      { length: this.jointCount },
+      () => [],
+    );
+    for (let i = 0; i < this.jointCount; i++) {
+      const p = this.parentIndices[i];
+      if (p >= 0) children[p].push(i);
+    }
+    const topoOrder: number[] = [];
+    let head = 0;
+    for (let i = 0; i < this.jointCount; i++) {
+      if (this.parentIndices[i] < 0) topoOrder.push(i);
+    }
+    while (head < topoOrder.length) {
+      const j = topoOrder[head++];
+      for (const child of children[j]) topoOrder.push(child);
+    }
+    this.topoOrder = topoOrder;
   }
 }
