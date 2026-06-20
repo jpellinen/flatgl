@@ -9,7 +9,7 @@ An opinionated WebGL 2.0 engine for games and game-like apps. Zero runtime depen
 ## Features
 
 - **ECS architecture** — entities, components, and type-safe queries via `World`
-- **Single entry point** — `Engine.create()` wires the full 3-pass pipeline internally
+- **Single entry point** — `Engine.create()` wires the full pipeline internally
 - **Shadow mapping** — one directional light with PCF soft shadows
 - **FXAA post-processing** — anti-aliasing + optional contrast/saturation grade
 - **Frustum culling** — camera and light frustums, bounding spheres auto-computed from mesh geometry
@@ -22,6 +22,7 @@ An opinionated WebGL 2.0 engine for games and game-like apps. Zero runtime depen
 - **OBJ loader** — positions, normals, and UVs with flat-normal fallback
 - **glTF 2.0 loader** — skinned meshes and animation clips from Blender GLB exports
 - **PNG textures** — load via URL or raw `Uint8Array`
+- **Skybox** — equirectangular HDR/LDR panorama rendered as an infinite background via `engine.setSkybox(texture)`
 - **Stats overlay** — real-time FPS, draw calls, culling stats, triangle count, particle count
 - **Bounding sphere debug** — visualise per-entity bounding spheres as line circles
 
@@ -132,6 +133,7 @@ engine.input: InputSnapshot       // keyboard + mouse state (read each frame)
 engine.assets: AssetFactory       // mesh, material, texture, emitter creation
 
 engine.start(): () => void        // starts RAF loop, returns stop function
+engine.setSkybox(texture: Texture): void    // equirectangular skybox panorama
 engine.showStats(visible?: boolean): void   // toggle real-time stats overlay
 engine.showBoundingSpheres(visible?: boolean): void  // toggle debug circles
 engine.destroy(): void
@@ -174,6 +176,7 @@ engine.assets.createSkinnedMaterial(opts?: MaterialOptions): Material
     contrast?: number;       // default 1.0
     saturation?: number;     // default 1.0
   };
+  clearColor?: Vec3;               // framebuffer clear color; default (0.08, 0.08, 0.12)
 }
 ```
 
@@ -296,14 +299,14 @@ Open `http://localhost:8080`. The demo scene includes a campfire with particle e
 ```
 src/
 ├── index.ts              # Public API
-├── engine/               # Engine, AssetFactory, ScreenPass, Camera, InputSystem
+├── engine/               # Engine, AssetFactory, ScreenPass, SkyboxPass, Camera, InputSystem
 ├── core/                 # ECS primitives (World, Entity, System)
 ├── components/           # Mesh, SkinnedMesh, Material, Transform, Script, Skeleton, Animator, ParticleEmitter
 ├── systems/              # RenderSystem, ShadowSystem, AnimationSystem, ScriptSystem, ParticleSystem
 ├── renderer/             # WebGL2 wrappers (Shader, Buffer, Texture, Framebuffer)
 ├── math/                 # Vec3, Mat4, Quat
 ├── loaders/              # ObjLoader, GltfLoader
-└── shaders/              # GLSL 3.00 ES (scene, shadow, screen/FXAA, particle, debug) — USE_SKINNING define variant
+└── shaders/              # GLSL 3.00 ES (scene, shadow, screen/FXAA, particle, skybox, debug) — USE_SKINNING define variant
 examples/
 ├── demo.ts               # Scene with campfire, rocks, trees, and animated character
 └── assets/               # campfire, rock, tree — .obj + .png each; fire.png; testanim.glb
@@ -314,7 +317,8 @@ examples/
 1. **Shadow pass** — depth-only render from light's perspective into a 2048×2048 texture; culled against light frustum
 2. **Scene pass** — Blinn-Phong shading with PCF soft shadows; culled against camera frustum; material-batched draw calls
 3. **Particle pass** — GPU-instanced billboard quads, sorted per emitter; additive or alpha blending
-4. **Screen pass** — FXAA anti-aliasing + contrast/saturation grade on a fullscreen quad
+4. **Skybox pass** — equirectangular panorama projected via inverse view-projection on a fullscreen triangle; renders at depth 1.0 with `LEQUAL`, filling only uncovered pixels
+5. **Screen pass** — FXAA anti-aliasing + contrast/saturation grade on a fullscreen quad
 
 ## Tech Stack
 

@@ -25,6 +25,7 @@ Engine (engine/Engine.ts)
 │   ├── RenderSystem               — Blinn-Phong scene pass into sceneFb; material-batched draw calls
 │   └── ParticleSystem             — simulate + GPU-instanced billboard render; owns per-emitter GpuState
 │
+├── SkyboxPass (engine/)            — equirectangular panorama via fullscreen triangle; renders into sceneFb after particles
 ├── ScreenPass (engine/)           — fullscreen FXAA + color grade quad
 │
 └── Renderer (renderer/)           — thin WebGL2 wrappers: Shader, Buffer, Texture, Framebuffer, RenderContext
@@ -77,7 +78,11 @@ Systems are run in registration order: `ScriptSystem → AnimationSystem → Sha
 
 `ParticleSystem` renders after the scene pass into the same `sceneFb`. It owns a `Map<ParticleEmitter, GpuState>` where `GpuState` holds the VAO, quad VBO, instance VBO, instance data buffer, and resolved texture. GPU state is lazily initialised on first render of each emitter and destroyed when the emitter is removed from the world. Simulation (physics, spawn) runs in `update()`; instance data upload and draw happen in `render()`.
 
-### Pass 4 — Screen
+### Pass 4 — Skybox
+
+`SkyboxPass` is optional — created lazily via `engine.setSkybox(texture)`. It renders an equirectangular panorama texture onto a fullscreen triangle (no geometry — the vertex shader emits 3 hard-coded clip-space positions). The fragment shader reconstructs a world-space ray direction from `inverse(ViewProjection)` and maps it to equirectangular UVs. The view matrix has its translation column zeroed so the skybox stays at infinity. Depth is written as 1.0 and tested with `LEQUAL`, so only pixels not covered by scene geometry or particles are filled. `depthMask` is disabled during the pass to avoid overwriting the depth buffer. Calling `setSkybox` again destroys the previous pass and creates a new one.
+
+### Pass 5 — Screen
 
 `ScreenPass` blits `sceneFb`'s colour attachment through a fullscreen-quad shader that applies FXAA anti-aliasing and optional contrast/saturation grading. Output goes to the default framebuffer (the canvas).
 
