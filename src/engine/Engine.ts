@@ -12,6 +12,7 @@ import { Shader } from '../renderer/Shader';
 import { Texture } from '../renderer/Texture';
 import { ScreenPass } from './ScreenPass';
 import type { PostProcessOptions } from './ScreenPass';
+import { SkyboxPass } from './SkyboxPass';
 import { AssetFactory } from './AssetFactory';
 import { Camera } from './Camera';
 import type { CameraOptions } from './Camera';
@@ -74,6 +75,7 @@ export class Engine {
   private particleSystem: ParticleSystem;
   private inputSystem: InputManager;
   private systems: System[] = [];
+  private skyboxPass: SkyboxPass | null = null;
   private statsEl: HTMLDivElement | null = null;
   private smoothFps = 0;
 
@@ -202,6 +204,11 @@ export class Engine {
     return this.inputSystem.snapshot;
   }
 
+  setSkybox(texture: Texture): void {
+    this.skyboxPass?.destroy();
+    this.skyboxPass = new SkyboxPass(this.context, texture);
+  }
+
   showBoundingSpheres(visible = true): void {
     this.renderSystem.showBoundingSpheres = visible;
   }
@@ -253,6 +260,7 @@ export class Engine {
       this.inputSystem.update(aspect);
       for (const s of this.systems) s.update?.(dt);
       for (const s of this.systems) s.render?.();
+      this.skyboxPass?.render(this.sceneFb, this.camera, aspect);
       this.screenPass.render(this.sceneFb, w, h);
 
       if (this.statsEl && dt > 0) {
@@ -278,6 +286,7 @@ export class Engine {
     this.inputSystem.destroy();
     this.world.destroyAll();
     for (const s of this.systems) s.destroy?.();
+    this.skyboxPass?.destroy();
     this.shadowFb.destroy();
     this.sceneFb.destroy();
     this.screenPass.destroy();
