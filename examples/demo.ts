@@ -73,11 +73,6 @@ async function init(): Promise<void> {
     postProcess: {
       fxaa: true,
       saturation: 1.1,
-      fog: {
-        color: new Vec3(0.7, 0.75, 0.8), // default
-        near: 8, // fog starts at distance 20
-        far: 10, // fully opaque at distance 100
-      },
     },
   });
 
