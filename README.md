@@ -12,6 +12,7 @@ An opinionated WebGL 2.0 engine for games and game-like apps. Zero runtime depen
 - **Single entry point** — `Engine.create()` wires the full pipeline internally
 - **Shadow mapping** — one directional light with PCF soft shadows
 - **FXAA post-processing** — anti-aliasing + optional contrast/saturation grade
+- **Distance fog** — linear depth-based fog applied as a post-process pass; configurable color, near/far distances
 - **Frustum culling** — camera and light frustums, bounding spheres auto-computed from mesh geometry
 - **Camera** — perspective (default) or orthographic, follows `camera.target`
 - **Keyboard + mouse input** — `engine.input` with `mouseWorld` unprojected to the Y=0 ground plane; scroll wheel zoom
@@ -175,6 +176,11 @@ engine.assets.createSkinnedMaterial(opts?: MaterialOptions): Material
     fxaa?: boolean;          // default true
     contrast?: number;       // default 1.0
     saturation?: number;     // default 1.0
+    fog?: {
+      color?: Vec3;          // fog color; default (0.7, 0.75, 0.8)
+      near?: number;         // distance where fog begins; default 20
+      far?: number;          // distance where fog is fully opaque; default 100
+    };
   };
   clearColor?: Vec3;               // framebuffer clear color; default (0.08, 0.08, 0.12)
 }
@@ -318,7 +324,7 @@ examples/
 2. **Scene pass** — Blinn-Phong shading with PCF soft shadows; culled against camera frustum; material-batched draw calls
 3. **Particle pass** — GPU-instanced billboard quads, sorted per emitter; additive or alpha blending
 4. **Skybox pass** — equirectangular panorama projected via inverse view-projection on a fullscreen triangle; renders at depth 1.0 with `LEQUAL`, filling only uncovered pixels
-5. **Screen pass** — FXAA anti-aliasing + contrast/saturation grade on a fullscreen quad
+5. **Screen pass** — optional distance fog (linearised depth), FXAA anti-aliasing + contrast/saturation grade on a fullscreen quad
 
 ## Tech Stack
 

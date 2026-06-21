@@ -151,8 +151,10 @@ export class ParticleSystem implements System {
     gl.depthMask(false);
 
     this.shader.use();
-    if (this.viewLoc) gl.uniformMatrix4fv(this.viewLoc, false, this.view.array);
-    if (this.projLoc) gl.uniformMatrix4fv(this.projLoc, false, this.proj.array);
+    if (this.viewLoc)
+      gl.uniformMatrix4fv(this.viewLoc, false, this.view.array);
+    if (this.projLoc)
+      gl.uniformMatrix4fv(this.projLoc, false, this.proj.array);
     if (this.texLoc) gl.uniform1i(this.texLoc, 0);
 
     for (const entity of entities) {
@@ -176,9 +178,12 @@ export class ParticleSystem implements System {
         const t = 1 - emitter.lifetimes[i] / emitter.maxLifetimes[i];
         const size = emitter.size + (emitter.sizeEnd - emitter.size) * t;
         const alpha = 1 - t;
-        const r = emitter.color.x + (emitter.colorEnd.x - emitter.color.x) * t;
-        const g = emitter.color.y + (emitter.colorEnd.y - emitter.color.y) * t;
-        const b = emitter.color.z + (emitter.colorEnd.z - emitter.color.z) * t;
+        const r =
+          emitter.color.x + (emitter.colorEnd.x - emitter.color.x) * t;
+        const g =
+          emitter.color.y + (emitter.colorEnd.y - emitter.color.y) * t;
+        const b =
+          emitter.color.z + (emitter.colorEnd.z - emitter.color.z) * t;
 
         const base = i * INST_STRIDE;
         const pi = i * 3;

@@ -70,7 +70,15 @@ async function init(): Promise<void> {
   const engine = Engine.create({
     canvas,
     light: { direction: new Vec3(1, 2, 1) },
-    postProcess: { fxaa: true, saturation: 1.1 },
+    postProcess: {
+      fxaa: true,
+      saturation: 1.1,
+      fog: {
+        color: new Vec3(0.7, 0.75, 0.8), // default
+        near: 8, // fog starts at distance 20
+        far: 10, // fully opaque at distance 100
+      },
+    },
   });
 
   const { world, input, assets } = engine;

@@ -40,6 +40,7 @@ export type {
   EngineOptions,
   LightOptions,
   PostProcessOptions,
+  FogOptions,
   MaterialOptions,
   CameraOptions,
   ParticleEmitterOptions,

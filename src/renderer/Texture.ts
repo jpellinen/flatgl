@@ -149,6 +149,25 @@ export class Texture extends Resource {
     });
   }
 
+  static createDepthTarget(
+    context: RenderContext,
+    width: number,
+    height: number,
+  ): Texture {
+    const gl = context.gl;
+    return Texture.configure(context, {
+      wrap: gl.CLAMP_TO_EDGE,
+      minFilter: gl.NEAREST,
+      magFilter: gl.NEAREST,
+      internalFormat: gl.DEPTH_COMPONENT32F,
+      format: gl.DEPTH_COMPONENT,
+      type: gl.FLOAT,
+      width,
+      height,
+      data: null,
+    });
+  }
+
   static createDepth(
     context: RenderContext,
     width: number,

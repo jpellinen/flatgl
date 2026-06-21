@@ -84,7 +84,7 @@ Systems are run in registration order: `ScriptSystem → AnimationSystem → Sha
 
 ### Pass 5 — Screen
 
-`ScreenPass` blits `sceneFb`'s colour attachment through a fullscreen-quad shader that applies FXAA anti-aliasing and optional contrast/saturation grading. Output goes to the default framebuffer (the canvas).
+`ScreenPass` blits `sceneFb`'s colour and depth attachments through a fullscreen-quad shader. When fog is enabled, the shader linearises the depth buffer and blends the scene colour toward a configurable fog colour based on linear distance (clamped between `fog.near` and `fog.far`). Fog is applied before the contrast/saturation grade so it integrates naturally. FXAA anti-aliasing and optional contrast/saturation grading follow. Output goes to the default framebuffer (the canvas).
 
 ---
 

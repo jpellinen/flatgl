@@ -29,7 +29,7 @@ import shadowFragSrc from '../shaders/shadow.frag.glsl';
 export type { CameraOptions };
 export type { ParticleEmitterOptions };
 export type { MaterialOptions } from './AssetFactory';
-export type { PostProcessOptions } from './ScreenPass';
+export type { PostProcessOptions, FogOptions } from './ScreenPass';
 
 export interface LightOptions {
   direction?: Vec3;
@@ -261,7 +261,13 @@ export class Engine {
       for (const s of this.systems) s.update?.(dt);
       for (const s of this.systems) s.render?.();
       this.skyboxPass?.render(this.sceneFb, this.camera, aspect);
-      this.screenPass.render(this.sceneFb, w, h);
+      this.screenPass.render(
+        this.sceneFb,
+        w,
+        h,
+        this.camera.near,
+        this.camera.far,
+      );
 
       if (this.statsEl && dt > 0) {
         this.smoothFps = this.smoothFps * 0.9 + (1 / dt) * 0.1;

@@ -8,10 +8,18 @@ precision mediump float;
 #define FXAA_REDUCE_MIN  (1.0 / 128.0)
 
 uniform sampler2D u_screen;
+uniform sampler2D u_depth;
 uniform vec2      u_texelSize;  // 1.0 / vec2(width, height)
 uniform float     u_fxaa;       // 1.0 = enabled, 0.0 = disabled
 uniform float     u_contrast;   // 1.0 = neutral; >1 darkens shadows
 uniform float     u_saturation; // 1.0 = neutral; <1 desaturates
+
+uniform float     u_fogEnabled;
+uniform vec3      u_fogColor;
+uniform float     u_fogNear;
+uniform float     u_fogFar;
+uniform float     u_cameraNear;
+uniform float     u_cameraFar;
 
 in vec2 v_uv;
 out vec4 fragColor;
@@ -61,6 +69,18 @@ void main() {
   vec3 col = u_fxaa > 0.5
     ? fxaa(u_screen, v_uv, u_texelSize)
     : texture(u_screen, v_uv).rgb;
+
+  // Distance fog (depth-writing geometry only; particles handle fog themselves)
+  if (u_fogEnabled > 0.5) {
+    float depth = texture(u_depth, v_uv).r;
+    if (depth < 1.0) {
+      float zNdc = depth * 2.0 - 1.0;
+      float linearDepth = (2.0 * u_cameraNear * u_cameraFar)
+        / (u_cameraFar + u_cameraNear - zNdc * (u_cameraFar - u_cameraNear));
+      float fogFactor = clamp((linearDepth - u_fogNear) / (u_fogFar - u_fogNear), 0.0, 1.0);
+      col = mix(col, u_fogColor, fogFactor);
+    }
+  }
 
   // Contrast (gamma-style power curve; 1.0 = identity)
   col = pow(max(col, vec3(0.0)), vec3(u_contrast));
