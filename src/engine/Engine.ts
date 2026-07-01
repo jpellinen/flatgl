@@ -167,15 +167,15 @@ export class Engine {
       lightSpaceMat,
       skinnedShadowShader,
     );
-    const clearColor = options.clearColor ?? new Vec3(0.08, 0.08, 0.12);
+    const clearColor = options.clearColor ?? new Vec3(0.15, 0.15, 0.22);
     this.renderSystem = new RenderSystem(
       this.context,
       this.world,
       this.camera,
       this.lightState,
+      clearColor,
       this.sceneFb,
       1,
-      clearColor,
     );
 
     this.particleSystem = new ParticleSystem(
@@ -259,8 +259,10 @@ export class Engine {
       const aspect = w / Math.max(h, 1);
       this.inputSystem.update(aspect);
       for (const s of this.systems) s.update?.(dt);
-      for (const s of this.systems) s.render?.();
+      this.shadowSystem.render();
+      this.renderSystem.render();
       this.skyboxPass?.render(this.sceneFb, this.camera, aspect);
+      this.particleSystem.render();
       this.screenPass.render(
         this.sceneFb,
         w,

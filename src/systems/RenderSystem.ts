@@ -47,9 +47,9 @@ export class RenderSystem implements System {
     private world: World,
     private camera: CameraLike,
     private light: LightState,
+    private clearColor: Vec3,
     private target?: Framebuffer,
     private aspect: number = 1,
-    private clearColor: Vec3 = new Vec3(0.08, 0.08, 0.12),
   ) {}
 
   setTarget(fb: Framebuffer): void {

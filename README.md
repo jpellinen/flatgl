@@ -182,7 +182,7 @@ engine.assets.createSkinnedMaterial(opts?: MaterialOptions): Material
       far?: number;          // distance where fog is fully opaque; default 100
     };
   };
-  clearColor?: Vec3;               // framebuffer clear color; default (0.08, 0.08, 0.12)
+  clearColor?: Vec3;               // framebuffer clear color; default (0.15, 0.15, 0.22)
 }
 ```
 
