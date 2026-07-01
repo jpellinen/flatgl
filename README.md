@@ -322,8 +322,8 @@ examples/
 
 1. **Shadow pass** — depth-only render from light's perspective into a 2048×2048 texture; culled against light frustum
 2. **Scene pass** — Blinn-Phong shading with PCF soft shadows; culled against camera frustum; material-batched draw calls
-3. **Particle pass** — GPU-instanced billboard quads, sorted per emitter; additive or alpha blending
-4. **Skybox pass** — equirectangular panorama projected via inverse view-projection on a fullscreen triangle; renders at depth 1.0 with `LEQUAL`, filling only uncovered pixels
+3. **Skybox pass** — equirectangular panorama projected via inverse view-projection on a fullscreen triangle; renders at depth 1.0 with `LEQUAL`, filling only uncovered pixels
+4. **Particle pass** — GPU-instanced billboard quads, sorted per emitter; additive or alpha blending
 5. **Screen pass** — optional distance fog (linearised depth), FXAA anti-aliasing + contrast/saturation grade on a fullscreen quad
 
 ## Tech Stack
