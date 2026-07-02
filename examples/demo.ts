@@ -9,6 +9,9 @@ import {
 import type { ScriptBehavior, Entity } from '../src/index';
 import type { World } from '../src/core/World';
 
+import skyBoxPng from './assets/skybox.png';
+import groundSrc from './assets/ground.obj';
+import groundPng from './assets/ground.png';
 import treeSrc from './assets/tree.obj';
 import treePng from './assets/tree.png';
 import logSrc from './assets/log.obj';
@@ -31,37 +34,6 @@ function showError(err: unknown): void {
   document.body.appendChild(div);
 }
 
-function checkerboard(size: number): Uint8Array {
-  const data = new Uint8Array(size * size * 4);
-  for (let y = 0; y < size; y++) {
-    for (let x = 0; x < size; x++) {
-      const v = (x + y) % 2 === 0 ? 255 : 236;
-      const i = (y * size + x) * 4;
-      data[i] = v;
-      data[i + 1] = v;
-      data[i + 2] = v;
-      data[i + 3] = 255;
-    }
-  }
-  return data;
-}
-
-function makePlane(halfExtent: number): {
-  vertices: Float32Array;
-  indices: Uint16Array;
-} {
-  const e = halfExtent;
-  // prettier-ignore
-  const vertices = new Float32Array([
-    -e, 0, -e,  0, 1, 0,  0, 1,
-     e, 0, -e,  0, 1, 0,  1, 1,
-     e, 0,  e,  0, 1, 0,  1, 0,
-    -e, 0,  e,  0, 1, 0,  0, 0,
-  ]);
-  const indices = new Uint16Array([0, 2, 1, 0, 3, 2]);
-  return { vertices, indices };
-}
-
 async function init(): Promise<void> {
   const canvas = document.getElementById('glcanvas');
   if (!(canvas instanceof HTMLCanvasElement))
@@ -69,6 +41,7 @@ async function init(): Promise<void> {
 
   const engine = Engine.create({
     canvas,
+    clearColor: new Vec3(0.55, 0.78, 1.0),
     light: { direction: new Vec3(1, 2, 1) },
     postProcess: {
       fxaa: true,
@@ -78,7 +51,10 @@ async function init(): Promise<void> {
 
   const { world, input, assets } = engine;
 
-  const checkerTex = assets.createTexture(checkerboard(8), 8, 8);
+  const skyboxTex = await assets.loadTexture(skyBoxPng);
+  engine.setSkybox(skyboxTex);
+
+  const groundTex = await assets.loadTexture(groundPng);
   const treeTex = await assets.loadTexture(treePng);
   const logTex = await assets.loadTexture(logPng);
   const rockTex = await assets.loadTexture(rockPng);
@@ -89,13 +65,11 @@ async function init(): Promise<void> {
   const treeMesh = assets.createMesh(ObjLoader.parse(treeSrc));
   const treeMat = assets.createMaterial({
     texture: treeTex,
-    specular: 0.0,
   });
 
   const logMesh = assets.createMesh(ObjLoader.parse(logSrc));
   const logMat = assets.createMaterial({
     texture: logTex,
-    specular: 0.0,
   });
 
   const rockMesh = assets.createMesh(ObjLoader.parse(rockSrc));
@@ -111,13 +85,11 @@ async function init(): Promise<void> {
   const campfireMesh = assets.createMesh(ObjLoader.parse(campfireSrc));
   const campfireMat = assets.createMaterial({
     texture: campfireTex,
-    specular: 0.0,
   });
 
-  const groundMesh = assets.createMesh(makePlane(4));
+  const groundMesh = assets.createMesh(ObjLoader.parse(groundSrc));
   const groundMat = assets.createMaterial({
-    color: new Vec3(0.6, 0.9, 0.4),
-    texture: checkerTex,
+    texture: groundTex,
   });
 
   const ground = world.create();
@@ -135,9 +107,9 @@ async function init(): Promise<void> {
   // Each rotation steps by 2π/3 from the first so they spread evenly.
   const logBaseRot = -Math.PI * 0.35;
   for (const [pos, ry] of [
-    [new Vec3(-0.65, 0, -1.4), logBaseRot],
-    [new Vec3(-0.8, 0, 1.4), logBaseRot + (2 / 3) * Math.PI],
-    [new Vec3(1.4, 0, 0.35), logBaseRot + (4 / 3) * Math.PI],
+    [new Vec3(-0.75, 0, -1.1), logBaseRot],
+    [new Vec3(-0.8, 0.1, 1.4), logBaseRot + (2 / 3) * Math.PI],
+    [new Vec3(1.4, 0.05, 0.35), logBaseRot + (4 / 3) * Math.PI],
   ] as [Vec3, number][]) {
     const e = world.create();
     world.add(e, logMesh);
@@ -158,42 +130,46 @@ async function init(): Promise<void> {
     world.add(e, treeMat);
     world.add(
       e,
-      new Transform(new Vec3(x, 0, z), new Vec3(0, ry, 0), new Vec3(s, s, s)),
+      new Transform(new Vec3(x, 0.3, z), new Vec3(0, ry, 0), new Vec3(s, s, s)),
     );
   }
 
   // Rocks — varied scale and rotation
   for (const [x, z, ry, s] of [
     [2.5, 0.6, 0.0, 0.55],
-    [-2.4, 2.1, 1.1, 1.05],
-    [1.0, -1.1, 1.9, 0.7],
-    [-3.2, -1.7, 0.7, 0.4],
-    [1.85, -1.0, 1.9, 0.35],
+    [2.4, -2.1, 1.1, 1.05],
+    [0.8, -2.6, 1.9, 0.7],
+    [-2.5, -1.0, 0.7, 0.4],
+    [2.4, -0.8, 1.9, 0.35],
   ]) {
     const e = world.create();
     world.add(e, rockMesh);
     world.add(e, rockMat);
     world.add(
       e,
-      new Transform(new Vec3(x, 0, z), new Vec3(0, ry, 0), new Vec3(s, s, s)),
+      new Transform(
+        new Vec3(x, 0.35, z),
+        new Vec3(0, ry, 0),
+        new Vec3(s, s, s),
+      ),
     );
   }
 
   // Grass patches — varied scale and rotation
-  for (const [x, z, ry, s] of [
-    [0.9, 2.5, 0.4, 1.1],
-    [-0.85, 2.25, 1.9, 1.2],
-    [0.25, -3.0, 0.7, 1.0],
-    [-2.9, -2.1, 2.3, 1.2],
-    [2.2, -1.55, 1.1, 1.0],
-    [-1.35, -0.6, -0.1, 0.9],
+  for (const [x, y, z, ry, s] of [
+    [0.9, 0.475, 2.5, 0.4, 1.1],
+    [-0.75, 0.6, 2.5, 1.9, 1.2],
+    [0.25, 0.45, -3.0, 0.7, 1.0],
+    [-2.9, 0.5, -2.1, 2.3, 1.2],
+    [1.9, 0.35, -1.35, 1.1, 1.0],
+    [-2.45, 0.35, -0.2, -0.1, 0.9],
   ]) {
     const e = world.create();
     world.add(e, grassMesh);
     world.add(e, grassMat);
     world.add(
       e,
-      new Transform(new Vec3(x, 0, z), new Vec3(0, ry, 0), new Vec3(s, s, s)),
+      new Transform(new Vec3(x, y, z), new Vec3(0, ry, 0), new Vec3(s, s, s)),
     );
   }
 
