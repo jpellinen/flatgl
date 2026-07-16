@@ -25,8 +25,8 @@ Engine (engine/Engine.ts)
 │   ├── RenderSystem               — Blinn-Phong scene pass into sceneFb; material-batched draw calls
 │   └── ParticleSystem             — simulate + GPU-instanced billboard render; owns per-emitter GpuState
 │
-├── SkyboxPass (engine/)            — equirectangular panorama via fullscreen triangle; renders into sceneFb after particles
-├── ScreenPass (engine/)           — fullscreen FXAA + color grade quad
+├── SkyboxPass (engine/)           — equirectangular panorama via fullscreen triangle; renders into sceneFb after the scene pass, before particles
+├── ScreenPass (engine/)           — fullscreen quad: distance fog, FXAA, contrast/saturation grade
 │
 └── Renderer (renderer/)           — thin WebGL2 wrappers: Shader, Buffer, Texture, Framebuffer, RenderContext
 ```
@@ -53,14 +53,17 @@ Query results are cached by a key derived from sorted constructor IDs and invali
 
 ### System dispatch
 
-`Engine.start()` drives two passes per tick:
+`Engine.start()` drives two phases per tick. The update phase loops over the systems in registration order (`ScriptSystem → AnimationSystem → ShadowSystem → RenderSystem → ParticleSystem`), calling `system.update(dt)`. The render phase is a fixed sequence of explicit calls, not a loop:
 
 ```
-for each system: system.update(dt)
-for each system: system.render()
+shadowSystem.render()
+renderSystem.render()
+skyboxPass?.render()      // only when a skybox is set
+particleSystem.render()
+screenPass.render()
 ```
 
-Systems are run in registration order: `ScriptSystem → AnimationSystem → ShadowSystem → RenderSystem → ParticleSystem`. The `InputManager` is updated before systems. The `ScreenPass` runs after all system renders.
+The `InputManager` is updated before the systems.
 
 ---
 
@@ -74,13 +77,13 @@ Systems are run in registration order: `ScriptSystem → AnimationSystem → Sha
 
 `RenderSystem` renders into a full-resolution `Framebuffer` (`sceneFb`) with Blinn-Phong shading and PCF soft shadows. It queries `Mesh + Material` and `SkinnedMesh + Material` separately and groups them into material batches to minimise shader switches. Frustum culling happens per-entity using the camera's six clip planes and each mesh's pre-computed bounding sphere. `getWorldMatrix` is called twice per entity per frame (cull pass + draw pass), which is a known performance issue.
 
-### Pass 3 — Particles
+### Pass 3 — Skybox
 
-`ParticleSystem` renders after the scene pass into the same `sceneFb`. It owns a `Map<ParticleEmitter, GpuState>` where `GpuState` holds the VAO, quad VBO, instance VBO, instance data buffer, and resolved texture. GPU state is lazily initialised on first render of each emitter and destroyed when the emitter is removed from the world. Simulation (physics, spawn) runs in `update()`; instance data upload and draw happen in `render()`.
+`SkyboxPass` is optional — created lazily via `engine.setSkybox(texture)`. It renders an equirectangular panorama texture onto a fullscreen triangle (no geometry — the vertex shader emits 3 hard-coded clip-space positions). The fragment shader reconstructs a world-space ray direction from `inverse(ViewProjection)` and maps it to equirectangular UVs. The view matrix has its translation column zeroed so the skybox stays at infinity. Depth is written as 1.0 and tested with `LEQUAL`, so only pixels not covered by scene geometry are filled; particles blend over it in the next pass. `depthMask` is disabled during the pass to avoid overwriting the depth buffer. Calling `setSkybox` again destroys the previous pass and creates a new one.
 
-### Pass 4 — Skybox
+### Pass 4 — Particles
 
-`SkyboxPass` is optional — created lazily via `engine.setSkybox(texture)`. It renders an equirectangular panorama texture onto a fullscreen triangle (no geometry — the vertex shader emits 3 hard-coded clip-space positions). The fragment shader reconstructs a world-space ray direction from `inverse(ViewProjection)` and maps it to equirectangular UVs. The view matrix has its translation column zeroed so the skybox stays at infinity. Depth is written as 1.0 and tested with `LEQUAL`, so only pixels not covered by scene geometry or particles are filled. `depthMask` is disabled during the pass to avoid overwriting the depth buffer. Calling `setSkybox` again destroys the previous pass and creates a new one.
+`ParticleSystem` renders after the skybox pass into the same `sceneFb`. It owns a `Map<ParticleEmitter, GpuState>` where `GpuState` holds the VAO, quad VBO, instance VBO, instance data buffer, and resolved texture. GPU state is lazily initialised on first render of each emitter and destroyed when the emitter is removed from the world. Simulation (physics, spawn) runs in `update()`; instance data upload and draw happen in `render()`.
 
 ### Pass 5 — Screen
 
@@ -92,11 +95,11 @@ Systems are run in registration order: `ScriptSystem → AnimationSystem → Sha
 
 Resources are created by `AssetFactory` and owned by the caller. `World.destroy(entity)` calls `component.destroy()` on every component attached to that entity, which frees GPU objects (VAO, index buffer, WebGL texture, etc.).
 
-Important gaps as of last audit:
+Previously documented gaps that have since been fixed (kept here so they aren't re-reported):
 
-- `Mesh.destroy()` frees the VAO and IBO but **not** the VBO — the `Buffer` passed to the constructor is not stored, so its `WebGLBuffer` leaks.
-- `RenderSystem` has no `destroy()` method — the debug shader and debug mesh (allocated by `showBoundingSpheres`) are never freed.
-- `Texture.load()` sets `UNPACK_FLIP_Y_WEBGL = true` globally and never resets it.
+- `Mesh.destroy()` frees the VBO (`this.buffer.destroy()`) along with the VAO and IBO.
+- `RenderSystem.destroy()` exists and frees the debug shader and debug mesh allocated by `showBoundingSpheres`.
+- `Texture.configure()` resets `UNPACK_FLIP_Y_WEBGL` to `false` after every upload, so `Texture.load()` no longer leaks the flag globally.
 
 ---
 

@@ -152,6 +152,8 @@ engine.assets.loadGltf(url: string): Promise<{ mesh, skeleton, animator }> // fe
 engine.assets.createSkinnedMaterial(opts?: MaterialOptions): Material
 ```
 
+`setSkybox` expects an **equirectangular panorama** (2:1 aspect, like a Poly Haven HDRI exported to PNG/JPEG) — load it with `engine.assets.loadTexture(url)`. Calling `setSkybox` again replaces the previous skybox.
+
 ### `EngineOptions`
 
 ```typescript
@@ -331,4 +333,5 @@ examples/
 - **Language:** TypeScript 6 (strict mode, ES2020 target)
 - **Build:** tsup (library) + esbuild (demo), with custom loaders for `.glsl`, `.obj`, `.png`, and `.glb`
 - **Rendering:** WebGL 2.0 — no external graphics libraries
+- **Browser support:** any browser with WebGL 2.0 (all evergreen browsers; Safari 15+). `Engine.create()` throws `WebGL 2 not supported` otherwise — there is no WebGL 1 fallback
 - **Linting:** ESLint 9 + typescript-eslint + Prettier
