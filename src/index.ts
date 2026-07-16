@@ -14,6 +14,7 @@ export { Quat } from './math/Quat';
 // Asset loading
 export { ObjLoader } from './loaders/ObjLoader';
 export type { ObjData } from './loaders/ObjLoader';
+export { Primitives } from './loaders/Primitives';
 export { GltfLoader } from './loaders/GltfLoader';
 export type {
   GltfDocument,

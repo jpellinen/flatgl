@@ -20,6 +20,7 @@ An opinionated WebGL 2.0 engine for games and game-like apps. Zero runtime depen
 - **Particle system** — GPU-instanced billboard particles with per-particle physics, size/color lerp, and additive or alpha blending
 - **Transform hierarchy** — parent entity references; child transforms inherit parent TRS
 - **Skeletal animation** — GPU skinning via glTF 2.0 (.glb); up to 64 bones, linear keyframe interpolation and quaternion slerp
+- **Primitive shapes** — `Primitives.cube/plane/sphere` generate placeholder meshes with normals and UVs, no asset files needed
 - **OBJ loader** — positions, normals, and UVs with flat-normal fallback
 - **glTF 2.0 loader** — skinned meshes and animation clips from Blender GLB exports
 - **PNG textures** — load via URL or raw `Uint8Array`
@@ -30,7 +31,7 @@ An opinionated WebGL 2.0 engine for games and game-like apps. Zero runtime depen
 ## Quickstart
 
 ```typescript
-import { Engine, Script, Transform, Vec3, ObjLoader } from 'flatgl';
+import { Engine, Primitives, Script, Transform, Vec3 } from 'flatgl';
 import type { ScriptBehavior, Entity, World } from 'flatgl';
 
 const engine = Engine.create({
@@ -41,7 +42,7 @@ const engine = Engine.create({
 
 const { world, input, assets } = engine;
 
-const mesh = assets.createMesh(ObjLoader.parse(objSource));
+const mesh = assets.createMesh(Primitives.cube());
 const mat = assets.createMaterial({ color: new Vec3(0.9, 0.8, 0.6) });
 
 class PlayerMove implements ScriptBehavior {
@@ -153,6 +154,21 @@ engine.assets.createSkinnedMaterial(opts?: MaterialOptions): Material
 ```
 
 `setSkybox` expects an **equirectangular panorama** (2:1 aspect, like a Poly Haven HDRI exported to PNG/JPEG) — load it with `engine.assets.loadTexture(url)`. Calling `setSkybox` again replaces the previous skybox.
+
+### `Primitives`
+
+Generates placeholder mesh geometry (`ObjData`) on the CPU — pass the result to `engine.assets.createMesh`. All shapes are centred at the origin with proper normals and 0–1 UVs, so lighting, shadows, and texturing work out of the box.
+
+```typescript
+Primitives.cube(size = 1): ObjData              // flat normals, per-face UVs
+Primitives.plane(width = 1, depth = 1): ObjData // XZ quad at Y=0, facing +Y
+Primitives.sphere(radius = 0.5, segments = 24): ObjData // smooth normals; segments clamped to [3, 254]
+
+const box = world.create();
+world.add(box, assets.createMesh(Primitives.cube()));
+world.add(box, assets.createMaterial({ color: new Vec3(1, 0.4, 0.4) }));
+world.add(box, new Transform(new Vec3(0, 0.5, 0)));
+```
 
 ### `EngineOptions`
 
@@ -313,7 +329,7 @@ src/
 ├── systems/              # RenderSystem, ShadowSystem, AnimationSystem, ScriptSystem, ParticleSystem
 ├── renderer/             # WebGL2 wrappers (Shader, Buffer, Texture, Framebuffer)
 ├── math/                 # Vec3, Mat4, Quat
-├── loaders/              # ObjLoader, GltfLoader
+├── loaders/              # ObjLoader, GltfLoader, Primitives (generated cube/plane/sphere)
 └── shaders/              # GLSL 3.00 ES (scene, shadow, screen/FXAA, particle, skybox, debug) — USE_SKINNING define variant
 examples/
 ├── demo.ts               # Scene with campfire, rocks, trees, and animated character
